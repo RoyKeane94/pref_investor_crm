@@ -1,0 +1,221 @@
+{% extends "crm/base.html" %}
+{% load crm_tags %}
+
+{% block title %}{{ investor.name }} · Investor CRM{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-12 gap-6">
+  <aside class="col-span-12 md:col-span-4 space-y-4 text-body-sm">
+    <div class="border border-grey-border rounded-card p-4 bg-white space-y-2">
+      <div class="flex items-start justify-between mb-2">
+        <div>
+          <div class="text-page-title mb-1">{{ investor.name }}</div>
+          {% if investor.status == 'confirmed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">
+              Confirmed
+            </span>
+          {% elif investor.status == 'potential_sma' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">
+              Potential SMA
+            </span>
+          {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">
+              Target Fund III
+            </span>
+          {% endif %}
+        </div>
+        <button
+          class="px-3 py-1 rounded-badge bg-navy text-white text-body-sm"
+          hx-get="{% url 'crm:investor_edit' investor.pk %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+          Edit
+        </button>
+      </div>
+
+      <dl class="space-y-1 text-grey">
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Principal</dt>
+          <dd class="text-navy">{{ investor.principal_contact|default:"—" }}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Ticket Size</dt>
+          <dd class="text-navy">
+            {% if investor.ticket_size %}
+              £{{ investor.ticket_size }}m
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Office</dt>
+          <dd class="text-navy">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Responsibility</dt>
+          <dd class="text-navy">{{ investor.responsibility|default:"—" }}</dd>
+        </div>
+        <div class="flex justify-between items-center">
+          <dt class="text-field-label uppercase text-grey">VDR Access</dt>
+          <dd class="flex items-center space-x-2">
+            <span class="inline-block w-2 h-2 rounded-full {% if investor.vdr_access %}bg-vdr-active{% else %}bg-vdr-inactive{% endif %}"></span>
+            <span class="text-navy">
+              {% if investor.vdr_access %}Yes{% else %}No{% endif %}
+            </span>
+          </dd>
+        </div>
+        {% if investor.vdr_access and investor.vdr_access_date %}
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">VDR Date</dt>
+          <dd class="text-navy">{{ investor.vdr_access_date|date_ordinal }}</dd>
+        </div>
+        {% endif %}
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Last Contacted</dt>
+          <dd>
+            {% if investor.last_contacted %}
+              <span class="text-navy">{{ investor.last_contacted|date_ordinal }}</span>
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </div>
+        {% if investor.website %}
+        <div class="flex justify-between items-center">
+          <dt class="text-field-label uppercase text-grey">Website</dt>
+          <dd>
+            <a href="{{ investor.website }}" target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-badge bg-accent/10 text-accent border border-accent/30 text-body-sm font-medium hover:bg-accent/20 transition-colors">
+              Open ↗
+            </a>
+          </dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-heading text-navy">Reminders</div>
+        <button
+          class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+          hx-get="{% url 'crm:reminder_create' investor.pk %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+          + Add
+        </button>
+      </div>
+      <ul class="space-y-1 text-body-sm">
+        {% for reminder in reminders %}
+          <li x-show="showAll || {{ forloop.counter }} <= 5"
+              class="flex items-center justify-between">
+            <div>
+              <div class="text-navy">{{ reminder.description }}</div>
+              <div class="{% if reminder.is_overdue %}text-reminder-overdue{% else %}text-reminder-upcoming{% endif %}">
+                {{ reminder.due_date|date_ordinal }}
+              </div>
+            </div>
+            <form method="post" action="{% url 'crm:reminder_done' investor.pk reminder.pk %}"
+                  hx-post="{% url 'crm:reminder_done' investor.pk reminder.pk %}"
+                  hx-target="closest li"
+                  hx-swap="outerHTML"
+                  class="inline">
+              {% csrf_token %}
+              <button type="submit"
+                      class="px-2 py-1 border border-grey-border rounded-badge bg-transparent text-grey text-body-sm">
+                Done
+              </button>
+            </form>
+          </li>
+        {% empty %}
+          <li class="text-grey">No active reminders.</li>
+        {% endfor %}
+        {% if reminders|length > 5 %}
+          <li x-show="!showAll" class="pt-1">
+            <button type="button" @click="showAll = true"
+                    class="text-body-sm text-accent hover:underline font-medium">
+              Show all ({{ reminders|length }})
+            </button>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-heading text-navy">Other Contacts</div>
+        <button
+          class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+          hx-get="{% url 'crm:contact_create' investor.pk %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+          + Add
+        </button>
+      </div>
+      <table class="w-full text-left text-body-sm">
+        <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+          <tr>
+            <th class="py-1.5 px-1">Name</th>
+            <th class="py-1.5 px-1">Role</th>
+            <th class="py-1.5 px-1">Email</th>
+          </tr>
+        </thead>
+        <tbody class="text-grey">
+          {% for contact in contacts %}
+            <tr x-show="showAll || {{ forloop.counter }} <= 5"
+                class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+              <td class="py-1 text-navy">{{ contact.name }}</td>
+              <td class="py-1">{{ contact.role }}</td>
+              <td class="py-1">
+                {% if contact.email %}
+                  <a href="mailto:{{ contact.email }}" class="underline">
+                    {{ contact.email }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="3" class="py-2 text-grey">No additional contacts.</td>
+            </tr>
+          {% endfor %}
+          {% if contacts|length > 5 %}
+            <tr x-show="!showAll" class="border-t border-grey-border">
+              <td colspan="3" class="py-2">
+                <button type="button" @click="showAll = true"
+                        class="text-body-sm text-accent hover:underline font-medium">
+                  Show all ({{ contacts|length }})
+                </button>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </aside>
+
+  <section class="col-span-12 md:col-span-8 space-y-4 text-body-sm">
+    {% include "crm/partials/activity_timeline.html" %}
+
+    {% include "crm/partials/call_log_form.html" with show_form=False %}
+    {% include "crm/partials/email_log_form.html" with show_form=False %}
+    {% include "crm/partials/co_investment_form.html" with show_form=False %}
+    {% include "crm/partials/commitment_form.html" with show_form=False %}
+    {% include "crm/partials/info_link_form.html" with show_form=False %}
+  </section>
+</div>
+<script>
+  document.body.addEventListener('remindersChanged', function () { window.location.reload(); });
+  document.body.addEventListener('contactsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('callLogsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('emailLogsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('coinvestmentsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('commitmentsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('infoLinksChanged', function () { window.location.reload(); });
+  document.body.addEventListener('investorDetailChanged', function () { window.location.reload(); });
+</script>
+{% endblock %}
+

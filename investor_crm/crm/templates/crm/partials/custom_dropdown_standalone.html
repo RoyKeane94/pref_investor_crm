@@ -1,0 +1,32 @@
+{% comment %}Custom dropdown for non-Django selects. Pass select_name, select_id, choices (list of (value, label)), selected (value).{% endcomment %}
+<div class="relative w-full min-w-[140px]" x-data="customDropdown()" x-init="$nextTick(() => init($el.querySelector('select')))" @click.outside="open = false">
+  <div class="absolute -left-[9999px] w-0 h-0 overflow-hidden pointer-events-none">
+    <select name="{{ select_name }}" id="{{ select_id }}" class="w-full">
+      {% for value, label in choices %}
+        <option value="{{ value }}" {% if selected == value or selected|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button
+    type="button"
+    @click="open = !open"
+    class="w-full border border-grey-border rounded-card px-3 py-2 text-body-sm bg-white text-navy text-left flex justify-between items-center focus:outline-none focus:ring-1 focus:ring-accent hover:bg-grey-hover">
+    <span class="truncate" x-text="selectedLabel || 'Select...'"></span>
+    <span class="text-grey-dark shrink-0 ml-2">&#9660;</span>
+  </button>
+  <div
+    x-show="open"
+    x-transition
+    class="absolute z-50 w-full mt-1 bg-white border border-grey-border rounded-card shadow-lg max-h-60 overflow-auto"
+    style="display: none;">
+    <template x-for="(opt, i) in options" :key="opt.value + i">
+      <button
+        type="button"
+        @click="choose(opt.value)"
+        class="w-full px-3 py-2 text-left text-body-sm text-navy hover:bg-grey-hover first:rounded-t-card last:rounded-b-card"
+        :class="opt.value === selectedValue ? 'bg-grey-card font-medium' : ''"
+        x-text="opt.text">
+      </button>
+    </template>
+  </div>
+</div>

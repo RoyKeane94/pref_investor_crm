@@ -1,0 +1,32 @@
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-md p-6">
+    <div class="mb-4">
+      <h2 class="text-heading text-navy mb-1">Delete investor</h2>
+      <p class="text-body-sm text-grey">
+        Are you sure you want to delete <span class="font-semibold">{{ investor.name }}</span>?
+        This will remove all related contacts, logs, commitments, info links, co-investments and reminders.
+      </p>
+    </div>
+    <form
+      method="post"
+      action="{{ delete_url }}"
+      hx-post="{{ delete_url }}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="flex justify-end space-x-2">
+      {% csrf_token %}
+      <button
+        type="button"
+        class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="px-4 py-2 rounded-badge bg-danger text-white text-body-sm">
+        Delete
+      </button>
+    </form>
+  </div>
+</div>
+

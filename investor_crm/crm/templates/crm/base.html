@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Investor CRM{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/output.css' %}">
+  <script src="https://unpkg.com/htmx.org@2.0.2" defer></script>
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('customDropdown', () => ({
+        open: false,
+        select: null,
+        _selectedValue: '',
+        _selectedLabel: '',
+        init(selectEl) {
+          if (!selectEl) return;
+          this.select = selectEl;
+          this.select.setAttribute('tabindex', '-1');
+          this.select.style.position = 'absolute';
+          this.select.style.left = '-9999px';
+          const o = this.select.options[this.select.selectedIndex];
+          this._selectedValue = this.select.value;
+          this._selectedLabel = o ? o.textContent.trim() : '';
+        },
+        get selectedLabel() {
+          return this._selectedLabel || '';
+        },
+        get selectedValue() {
+          return this._selectedValue;
+        },
+        get options() {
+          if (!this.select) return [];
+          return Array.from(this.select.options).map(o => ({
+            value: o.value,
+            text: o.textContent.trim()
+          }));
+        },
+        choose(val) {
+          if (!this.select) return;
+          this.select.value = val;
+          this._selectedValue = val;
+          const o = this.select.options[this.select.selectedIndex];
+          this._selectedLabel = o ? o.textContent.trim() : '';
+          this.select.dispatchEvent(new Event('change', { bubbles: true }));
+          this.open = false;
+        }
+      }));
+    });
+  </script>
+  <script src="https://unpkg.com/alpinejs@3.x.x" defer></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.addEventListener('htmx:afterSwap', function(ev) {
+        if (ev.detail && ev.detail.target && typeof Alpine !== 'undefined') {
+          Alpine.initTree(ev.detail.target);
+        }
+      });
+    });
+  </script>
+</head>
+<body class="bg-white text-navy font-sans">
+  <header class="w-full border-b border-grey-border bg-white">
+    <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+      <a href="{% url 'crm:investor_list' %}" class="flex items-center space-x-3 hover:opacity-80">
+        <div class="w-2 h-2 rounded-full bg-accent"></div>
+        <div>
+          <div class="text-heading">Investor CRM</div>
+          <div class="text-body-sm text-grey-darker">Prefequity</div>
+        </div>
+      </a>
+      <div class="flex items-center gap-4">
+        {% if user.is_authenticated %}
+          <span class="text-body-sm text-grey truncate max-w-[200px]" title="{{ user.email }}">{{ user.email }}</span>
+          <span class="h-4 w-px bg-grey-border" aria-hidden="true"></span>
+          <form method="post" action="{% url 'logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="px-3 py-1.5 rounded-badge border border-grey-border text-grey text-body-sm hover:bg-grey-hover bg-transparent cursor-pointer">
+              Logout
+            </button>
+          </form>
+          <button
+            class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm"
+            hx-get="{% url 'crm:investor_create' %}"
+            hx-target="#modal-container"
+            hx-swap="innerHTML">
+            + New Investor
+          </button>
+        {% else %}
+          <a href="{% url 'login' %}"
+             class="px-3 py-1.5 rounded-badge border border-grey-border text-grey text-body-sm hover:bg-grey-hover">
+            Login
+          </a>
+          <a href="{% url 'register' %}"
+             class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+            Register
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="modal-container"></div>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+{% load crm_tags %}
+{% if show_form %}
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">Add Call Log</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ field.label }}
+          </label>
+          {% if field|is_select %}
+            {% include "crm/partials/custom_select.html" with field=field %}
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% for error in field.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+  <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
+    <div class="text-heading text-navy">Call Log</div>
+    <button
+      class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+      hx-get="{% url 'crm:calllog_create' investor.pk %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+      + Add
+    </button>
+  </div>
+  <table class="w-full text-left text-body-sm">
+    <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+      <tr>
+        <th class="py-1.5 px-1">Date</th>
+        <th class="py-1.5 px-1">With</th>
+      </tr>
+    </thead>
+    <tbody class="text-grey" x-data="{ openNote: null }">
+      {% for call in call_logs %}
+        <tr
+          x-show="showAll || {{ forloop.counter }} <= 5"
+          class="border-t border-grey-border cursor-pointer hover:bg-grey-hover {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}"
+          @click="openNote === {{ call.pk }} ? openNote = null : openNote = {{ call.pk }}">
+          <td class="py-1 text-navy">{{ call.date|date_ordinal }}</td>
+          <td class="py-1">{{ call.with_display|default:"—" }}</td>
+        </tr>
+        {% if call.notes %}
+        <tr x-show="(showAll || {{ forloop.counter }} <= 5) && openNote === {{ call.pk }}">
+          <td colspan="2" class="py-2 px-3 bg-grey-card text-grey">
+            {{ call.notes|linebreaksbr }}
+          </td>
+        </tr>
+        {% endif %}
+      {% empty %}
+        <tr>
+          <td colspan="2" class="py-2 text-grey">No calls logged.</td>
+        </tr>
+      {% endfor %}
+      {% if call_logs|length > 5 %}
+        <tr x-show="!showAll" class="border-t border-grey-border">
+          <td colspan="2" class="py-2">
+            <button type="button" @click="showAll = true"
+                    class="text-body-sm text-accent hover:underline font-medium">
+              Show all ({{ call_logs|length }})
+            </button>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+

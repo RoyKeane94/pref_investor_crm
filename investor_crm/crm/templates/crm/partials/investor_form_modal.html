@@ -1,0 +1,97 @@
+{% load crm_tags %}
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">{{ title }}</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div class="space-y-3">
+        {% for field in form %}
+          <div data-field-name="{{ field.name }}">
+            <label class="block text-field-label uppercase text-grey mb-1">
+              {{ field.label }}
+            </label>
+            {% if field|is_select %}
+              {% include "crm/partials/custom_select.html" with field=field %}
+            {% else %}
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}
+              <p class="text-xs text-grey mt-1">{{ field.help_text }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+              <p class="text-xs text-danger mt-1">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const responsibilityField = document.getElementById('id_responsibility');
+  const intermediaryRow = document.querySelector('[data-field-name="intermediary"]');
+  const intermediaryNameRow = document.querySelector('[data-field-name="intermediary_name"]');
+  const vdrAccessField = document.getElementById('id_vdr_access');
+  const vdrDateRow = document.querySelector('[data-field-name="vdr_access_date"]');
+
+  function syncIntermediary() {
+    if (!responsibilityField) return;
+    const label = responsibilityField.options[responsibilityField.selectedIndex]?.text || '';
+    const isIntermediary = label.trim() === 'Intermediary';
+    if (intermediaryRow) {
+      intermediaryRow.style.display = isIntermediary ? '' : 'none';
+    }
+    if (intermediaryNameRow) {
+      intermediaryNameRow.style.display = isIntermediary ? '' : 'none';
+    }
+  }
+
+  function syncVdr() {
+    if (!vdrAccessField || !vdrDateRow) return;
+    vdrDateRow.style.display = vdrAccessField.checked ? '' : 'none';
+  }
+
+  document.addEventListener('change', function (event) {
+    if (event.target === responsibilityField) {
+      syncIntermediary();
+    }
+    if (event.target === vdrAccessField) {
+      syncVdr();
+    }
+  });
+
+  syncIntermediary();
+  syncVdr();
+})();
+</script>
+

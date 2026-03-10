@@ -1,0 +1,116 @@
+{% load crm_tags %}
+{% if show_form %}
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">Add Co-investment</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ field.label }}
+          </label>
+          {% if field|is_select %}
+            {% include "crm/partials/custom_select.html" with field=field %}
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% for error in field.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+  <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
+    <div class="text-heading text-navy">Co-investment Opportunities</div>
+    <button
+      class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+      hx-get="{% url 'crm:coinvestment_create' investor.pk %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+      + Add
+    </button>
+  </div>
+  <table class="w-full text-left text-body-sm">
+    <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+      <tr>
+        <th class="py-1.5 px-1">Name</th>
+        <th class="py-1.5 px-1">Size (£m)</th>
+        <th class="py-1.5 px-1">Decision</th>
+        <th class="py-1.5 px-1">Date</th>
+      </tr>
+    </thead>
+    <tbody class="text-grey">
+      {% for coinvest in co_investments %}
+        <tr x-show="showAll || {{ forloop.counter }} <= 5"
+            class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+          <td class="py-1 text-navy">{{ coinvest.name }}</td>
+          <td class="py-1">
+            {% if coinvest.size %}
+              £{{ coinvest.size }}m
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td class="py-1">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge text-body-sm border
+              {% if coinvest.decision == 'committed' %}bg-decision-committed-bg text-decision-committed border-decision-committed-border
+              {% elif coinvest.decision == 'passed' %}bg-decision-passed-bg text-decision-passed border-decision-passed-border
+              {% else %}bg-decision-pending-bg text-decision-pending border-decision-pending-border{% endif %}">
+              {{ coinvest.get_decision_display }}
+            </span>
+          </td>
+          <td class="py-1">{% if coinvest.date %}{{ coinvest.date|date_ordinal }}{% else %}—{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4" class="py-2 text-grey">No co-investments.</td>
+        </tr>
+      {% endfor %}
+      {% if co_investments|length > 5 %}
+        <tr x-show="!showAll" class="border-t border-grey-border">
+          <td colspan="4" class="py-2">
+            <button type="button" @click="showAll = true"
+                    class="text-body-sm text-accent hover:underline font-medium">
+              Show all ({{ co_investments|length }})
+            </button>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+

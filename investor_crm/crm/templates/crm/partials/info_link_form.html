@@ -1,0 +1,105 @@
+{% if show_form %}
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">Add Info / Link</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+  <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
+    <div class="text-heading text-navy">Other Info &amp; Links</div>
+    <button
+      class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+      hx-get="{% url 'crm:infolink_create' investor.pk %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML">
+      + Add
+    </button>
+  </div>
+  <table class="w-full text-left text-body-sm">
+    <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+      <tr>
+        <th class="py-1.5 px-1">Title</th>
+        <th class="py-1.5 px-1">Detail</th>
+        <th class="py-1.5 px-1">Link</th>
+      </tr>
+    </thead>
+    <tbody class="text-grey">
+      {% for info in info_links %}
+        <tr x-show="showAll || {{ forloop.counter }} <= 5"
+            class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+          <td class="py-1 text-navy">{{ info.title }}</td>
+          <td class="py-1">{{ info.detail|default:"—" }}</td>
+          <td class="py-1">
+            {% if info.link %}
+              <a href="{{ info.link }}" target="_blank"
+                 class="inline-flex items-center gap-1 px-2 py-1 rounded-tag bg-accent/10 text-accent border border-accent/30 text-body-sm font-medium hover:bg-accent/20 transition-colors">
+                Open ↗
+              </a>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="3" class="py-2 text-grey">No info links.</td>
+        </tr>
+      {% endfor %}
+      {% if info_links|length > 5 %}
+        <tr x-show="!showAll" class="border-t border-grey-border">
+          <td colspan="3" class="py-2">
+            <button type="button" @click="showAll = true"
+                    class="text-body-sm text-accent hover:underline font-medium">
+              Show all ({{ info_links|length }})
+            </button>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+

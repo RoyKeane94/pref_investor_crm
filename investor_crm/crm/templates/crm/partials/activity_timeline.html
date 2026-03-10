@@ -1,0 +1,52 @@
+{% load crm_tags %}
+<div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+  <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
+    <div class="text-heading text-navy">Activity Timeline</div>
+  </div>
+  <div class="divide-y divide-grey-border text-body-sm" x-data="{ openNote: null }">
+    {% for item in timeline_items %}
+      <div
+        x-show="showAll || {{ forloop.counter }} <= 5"
+        class="py-2 cursor-pointer hover:bg-grey-hover px-2 -mx-2"
+        @click="openNote === {{ forloop.counter }} ? openNote = null : openNote = {{ forloop.counter }}">
+        <div class="flex items-center space-x-3">
+          <div class="w-28 text-grey">{{ item.date|date_ordinal }}</div>
+          <div>
+            {% if item.type == 'call' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-call-bg text-timeline-call text-body-sm">Call</span>
+            {% elif item.type == 'email' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-email-bg text-timeline-email text-body-sm">Email</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-coinvest-bg text-timeline-coinvest text-body-sm">Co-investment</span>
+            {% endif %}
+          </div>
+          <div class="flex-1 text-navy">
+            {{ item.summary }}
+          </div>
+        </div>
+        {% if item.notes %}
+        <div
+          class="mt-2 ml-28 mr-2 bg-grey-card rounded-card px-3 py-2 text-grey"
+          x-show="openNote === {{ forloop.counter }}">
+          {{ item.notes|linebreaksbr }}
+        </div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="py-2 text-grey">No recent activity.</div>
+    {% endfor %}
+  </div>
+  {% if timeline_items|length > 5 %}
+    <div x-show="!showAll" class="pt-2 text-right">
+      <button type="button" @click="showAll = true"
+              class="text-body-sm text-accent hover:underline font-medium">
+        Show all ({{ timeline_items|length }})
+      </button>
+    </div>
+  {% elif timeline_has_more %}
+    <div class="pt-2 text-right">
+      <span class="text-body-sm text-grey">Showing most recent 20 entries.</span>
+    </div>
+  {% endif %}
+</div>
+

@@ -1,0 +1,39 @@
+{% extends "crm/base.html" %}
+{% load crm_tags %}
+
+{% block title %}Register · Investor CRM{% endblock %}
+
+{% block content %}
+<div class="max-w-sm mx-auto mt-16">
+  <div class="border border-grey-border rounded-card p-6 bg-white">
+    <h1 class="text-page-title text-navy mb-4">Register</h1>
+    <form method="post" action="{% url 'register' %}" class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-danger text-body-sm">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ field.label }}</label>
+          {% if field|is_select %}
+            {% include "crm/partials/custom_select.html" with field=field %}
+          {% else %}
+            {{ field }}
+          {% endif %}
+          {% for error in field.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="pt-2">
+        <button type="submit" class="w-full px-4 py-2 rounded-badge bg-navy text-white text-body-sm font-medium">
+          Register
+        </button>
+      </div>
+    </form>
+    <p class="mt-4 text-body-sm text-grey text-center">
+      Already have an account? <a href="{% url 'login' %}" class="text-accent hover:underline">Login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

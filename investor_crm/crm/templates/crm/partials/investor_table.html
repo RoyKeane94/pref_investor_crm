@@ -1,0 +1,89 @@
+{% load crm_tags %}
+<section
+  id="investor-table"
+  hx-get="{% url 'crm:investor_list' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+  hx-trigger="investorListChanged from:body"
+  hx-swap="outerHTML">
+  <div class="border border-grey-border rounded-table overflow-hidden">
+    <table class="min-w-full text-left text-body-sm">
+      <thead class="bg-grey-card text-table-header uppercase text-grey-dark">
+        <tr>
+          <th class="px-4 py-2">Name</th>
+          <th class="px-4 py-2">Principal</th>
+          <th class="px-4 py-2">Status</th>
+          <th class="px-4 py-2">Ticket (£m)</th>
+          <th class="px-4 py-2">Office</th>
+          <th class="px-4 py-2">Responsibility</th>
+          <th class="px-4 py-2">
+            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&amp;{% endif %}{% if status_filter %}status={{ status_filter }}&amp;{% endif %}{% if responsibility_filter %}responsibility={{ responsibility_filter }}&amp;{% endif %}{% if office_filter %}office={{ office_filter }}&amp;{% endif %}sort=last_contacted">
+              Last Contacted
+            </a>
+          </th>
+          <th class="px-4 py-2 text-center">VDR</th>
+          <th class="px-4 py-2"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for investor in investors %}
+          <tr class="border-t border-grey-border hover:bg-grey-hover cursor-pointer"
+              onclick="window.location.href='{% url 'crm:investor_detail' investor.pk %}'">
+            <td class="px-4 py-2">{{ investor.name }}</td>
+            <td class="px-4 py-2 text-grey">{{ investor.principal_contact }}</td>
+            <td class="px-4 py-2">
+              {% if investor.status == 'confirmed' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">
+                  Confirmed
+                </span>
+              {% elif investor.status == 'potential_sma' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">
+                  Potential SMA
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">
+                  Target Fund III
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if investor.ticket_size %}
+                £{{ investor.ticket_size }}m
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-grey">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-2 text-grey-dark">
+              {{ investor.responsibility }}
+            </td>
+            <td class="px-4 py-2">
+              {% if investor.latest_contact_date %}
+                <span class="text-navy">{{ investor.latest_contact_date|date_ordinal }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-center">
+              <span class="inline-block w-2 h-2 rounded-full {% if investor.vdr_access %}bg-vdr-active{% else %}bg-vdr-inactive{% endif %}"></span>
+            </td>
+            <td class="px-4 py-2 text-right" onclick="event.stopPropagation();">
+              <button
+                class="text-grey hover:text-danger text-body-sm"
+                hx-get="{% url 'crm:investor_delete' investor.pk %}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML">
+                ×
+              </button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="9" class="px-4 py-4 text-center text-grey">
+              No investors found.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+

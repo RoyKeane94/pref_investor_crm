@@ -1,0 +1,42 @@
+{% load crm_tags %}
+{% if reminders %}
+  {% with has_overdue=reminders|dictsort:"due_date" %}
+  {% endwith %}
+  {% with any_overdue=False %}
+    {% for r in reminders %}
+      {% if r.is_overdue %}
+        {% with any_overdue=True %}{% endwith %}
+      {% endif %}
+    {% endfor %}
+  {% endwith %}
+  <div class="mb-4 rounded-card border border-grey-border px-4 py-3 text-body-sm {% if reminders|dictsort:"due_date" and reminders.0.is_overdue %}bg-reminder-overdue-bg{% else %}bg-reminder-upcoming-bg{% endif %}">
+    <div class="font-semibold text-navy mb-2">Reminders</div>
+    <ul class="space-y-1">
+      {% for reminder in reminders %}
+        <li class="flex items-center justify-between">
+          <div>
+            <a href="{% url 'crm:investor_detail' reminder.investor.pk %}" class="font-medium text-navy hover:underline">
+              {{ reminder.investor.name }}
+            </a>
+            <span class="text-grey">— {{ reminder.description }}</span>
+            <span class="{% if reminder.is_overdue %}text-reminder-overdue{% else %}text-reminder-upcoming{% endif %} ml-2">
+              {{ reminder.due_date|date_ordinal }}
+            </span>
+          </div>
+          <form method="post" action="{% url 'crm:reminder_done' reminder.investor.pk reminder.pk %}"
+                hx-post="{% url 'crm:reminder_done' reminder.investor.pk reminder.pk %}"
+                hx-target="closest li"
+                hx-swap="outerHTML"
+                class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="px-2 py-1 border border-grey-border rounded-badge bg-transparent text-grey text-body-sm">
+              Done
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
