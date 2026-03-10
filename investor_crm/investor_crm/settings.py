@@ -32,6 +32,15 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split() or []
 
+# Required for CSRF when using HTTPS (e.g. on Railway). Comma-separated list of origins.
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://prefinvestorcrm-production.up.railway.app',
+    ).split(',')
+    if origin.strip()
+]
 
 # Application definition
 
