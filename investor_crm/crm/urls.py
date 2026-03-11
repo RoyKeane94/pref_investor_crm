@@ -31,6 +31,11 @@ urlpatterns = [
         name='calllog_delete',
     ),
     path(
+        'investors/<int:pk>/calls/<int:call_pk>/edit/',
+        views.calllog_edit,
+        name='calllog_edit',
+    ),
+    path(
         'investors/<int:pk>/emails/create/',
         views.emaillog_create,
         name='emaillog_create',
@@ -39,6 +44,11 @@ urlpatterns = [
         'investors/<int:pk>/emails/<int:email_pk>/delete/',
         views.emaillog_delete,
         name='emaillog_delete',
+    ),
+    path(
+        'investors/<int:pk>/emails/<int:email_pk>/edit/',
+        views.emaillog_edit,
+        name='emaillog_edit',
     ),
     path(
         'investors/<int:pk>/coinvestments/create/',
@@ -51,6 +61,11 @@ urlpatterns = [
         name='coinvestment_delete',
     ),
     path(
+        'investors/<int:pk>/coinvestments/<int:coinvest_pk>/edit/',
+        views.coinvestment_edit,
+        name='coinvestment_edit',
+    ),
+    path(
         'investors/<int:pk>/commitments/create/',
         views.commitment_create,
         name='commitment_create',
@@ -61,6 +76,11 @@ urlpatterns = [
         name='commitment_delete',
     ),
     path(
+        'investors/<int:pk>/commitments/<int:commit_pk>/edit/',
+        views.commitment_edit,
+        name='commitment_edit',
+    ),
+    path(
         'investors/<int:pk>/infolinks/create/',
         views.infolink_create,
         name='infolink_create',
@@ -69,6 +89,11 @@ urlpatterns = [
         'investors/<int:pk>/infolinks/<int:link_pk>/delete/',
         views.infolink_delete,
         name='infolink_delete',
+    ),
+    path(
+        'investors/<int:pk>/infolinks/<int:link_pk>/edit/',
+        views.infolink_edit,
+        name='infolink_edit',
     ),
     path(
         'investors/<int:pk>/reminders/create/',

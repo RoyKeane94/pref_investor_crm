@@ -64,6 +64,7 @@
         <th class="py-1.5 px-1">Title</th>
         <th class="py-1.5 px-1">Detail</th>
         <th class="py-1.5 px-1">Link</th>
+        <th class="py-1.5 px-1 text-right"></th>
       </tr>
     </thead>
     <tbody class="text-grey">
@@ -82,15 +83,25 @@
               —
             {% endif %}
           </td>
+          <td class="py-1 text-right">
+            <button
+              type="button"
+              class="text-body-sm text-grey hover:text-accent"
+              hx-get="{% url 'crm:infolink_edit' investor.pk info.pk %}"
+              hx-target="#modal-container"
+              hx-swap="innerHTML">
+              Edit
+            </button>
+          </td>
         </tr>
       {% empty %}
         <tr>
-          <td colspan="3" class="py-2 text-grey">No info links.</td>
+          <td colspan="4" class="py-2 text-grey">No info links.</td>
         </tr>
       {% endfor %}
       {% if info_links|length > 5 %}
         <tr x-show="!showAll" class="border-t border-grey-border">
-          <td colspan="3" class="py-2">
+          <td colspan="4" class="py-2">
             <button type="button" @click="showAll = true"
                     class="text-body-sm text-accent hover:underline font-medium">
               Show all ({{ info_links|length }})

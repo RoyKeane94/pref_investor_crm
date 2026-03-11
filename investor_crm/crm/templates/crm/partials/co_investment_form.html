@@ -70,6 +70,7 @@
         <th class="py-1.5 px-1">Size (£m)</th>
         <th class="py-1.5 px-1">Decision</th>
         <th class="py-1.5 px-1">Date</th>
+        <th class="py-1.5 px-1 text-right"></th>
       </tr>
     </thead>
     <tbody class="text-grey">
@@ -93,15 +94,25 @@
             </span>
           </td>
           <td class="py-1">{% if coinvest.date %}{{ coinvest.date|date_ordinal }}{% else %}—{% endif %}</td>
+          <td class="py-1 text-right">
+            <button
+              type="button"
+              class="text-body-sm text-grey hover:text-accent"
+              hx-get="{% url 'crm:coinvestment_edit' investor.pk coinvest.pk %}"
+              hx-target="#modal-container"
+              hx-swap="innerHTML">
+              Edit
+            </button>
+          </td>
         </tr>
       {% empty %}
         <tr>
-          <td colspan="4" class="py-2 text-grey">No co-investments.</td>
+          <td colspan="5" class="py-2 text-grey">No co-investments.</td>
         </tr>
       {% endfor %}
       {% if co_investments|length > 5 %}
         <tr x-show="!showAll" class="border-t border-grey-border">
-          <td colspan="4" class="py-2">
+          <td colspan="5" class="py-2">
             <button type="button" @click="showAll = true"
                     class="text-body-sm text-accent hover:underline font-medium">
               Show all ({{ co_investments|length }})

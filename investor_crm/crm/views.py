@@ -3,7 +3,8 @@ from itertools import chain
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, DateField, OuterRef, Q, Subquery
-from django.db.models.functions import Greatest
+from django.db.models import Value
+from django.db.models.functions import Coalesce, Greatest, NullIf
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
@@ -49,11 +50,28 @@ def _annotated_investors():
         .order_by('-date')
         .values('date')[:1]
     )
+    latest_coinvestment = (
+        CoInvestment.objects.filter(
+            investor=OuterRef('pk'), date__isnull=False
+        )
+        .order_by('-date')
+        .values('date')[:1]
+    )
 
     return Investor.objects.annotate(
         last_call=Subquery(latest_call, output_field=DateField()),
         last_email=Subquery(latest_email, output_field=DateField()),
-        latest_contact_date=Greatest('last_call', 'last_email'),
+        last_coinvestment=Subquery(
+            latest_coinvestment, output_field=DateField()
+        ),
+        latest_contact_date=NullIf(
+            Greatest(
+                Coalesce('last_call', date.min),
+                Coalesce('last_email', date.min),
+                Coalesce('last_coinvestment', date.min),
+            ),
+            Value(date.min, output_field=DateField()),
+        ),
     )
 
 
@@ -374,6 +392,31 @@ def calllog_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+def calllog_edit(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    call = get_object_or_404(CallLog, pk=call_pk, investor=investor)
+    if request.method == 'POST':
+        form = CallLogForm(request.POST, investor=investor, instance=call)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'callLogsChanged'
+            return response
+    else:
+        form = CallLogForm(investor=investor, instance=call)
+    return render(
+        request,
+        'crm/partials/call_log_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'post_url': reverse('crm:calllog_edit', args=[investor.pk, call.pk]),
+        },
+    )
+
+
+@login_required
 def calllog_delete(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     call = get_object_or_404(CallLog, pk=call_pk, investor=investor)
@@ -405,6 +448,31 @@ def emaillog_create(request: HttpRequest, pk: int) -> HttpResponse:
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:emaillog_create', args=[investor.pk]),
+        },
+    )
+
+
+@login_required
+def emaillog_edit(request: HttpRequest, pk: int, email_pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    email = get_object_or_404(EmailLog, pk=email_pk, investor=investor)
+    if request.method == 'POST':
+        form = EmailLogForm(request.POST, investor=investor, instance=email)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'emailLogsChanged'
+            return response
+    else:
+        form = EmailLogForm(investor=investor, instance=email)
+    return render(
+        request,
+        'crm/partials/email_log_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'post_url': reverse('crm:emaillog_edit', args=[investor.pk, email.pk]),
         },
     )
 
@@ -450,6 +518,33 @@ def coinvestment_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+def coinvestment_edit(
+    request: HttpRequest, pk: int, coinvest_pk: int
+) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    coinvest = get_object_or_404(CoInvestment, pk=coinvest_pk, investor=investor)
+    if request.method == 'POST':
+        form = CoInvestmentForm(request.POST, instance=coinvest)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'coinvestmentsChanged'
+            return response
+    else:
+        form = CoInvestmentForm(instance=coinvest)
+    return render(
+        request,
+        'crm/partials/co_investment_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'post_url': reverse('crm:coinvestment_edit', args=[investor.pk, coinvest.pk]),
+        },
+    )
+
+
+@login_required
 def coinvestment_delete(
     request: HttpRequest, pk: int, coinvest_pk: int
 ) -> HttpResponse:
@@ -485,6 +580,35 @@ def commitment_create(request: HttpRequest, pk: int) -> HttpResponse:
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:commitment_create', args=[investor.pk]),
+        },
+    )
+
+
+@login_required
+def commitment_edit(
+    request: HttpRequest, pk: int, commit_pk: int
+) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    commitment = get_object_or_404(
+        OtherCommitment, pk=commit_pk, investor=investor
+    )
+    if request.method == 'POST':
+        form = OtherCommitmentForm(request.POST, instance=commitment)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'commitmentsChanged'
+            return response
+    else:
+        form = OtherCommitmentForm(instance=commitment)
+    return render(
+        request,
+        'crm/partials/commitment_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'post_url': reverse('crm:commitment_edit', args=[investor.pk, commitment.pk]),
         },
     )
 
@@ -527,6 +651,33 @@ def infolink_create(request: HttpRequest, pk: int) -> HttpResponse:
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:infolink_create', args=[investor.pk]),
+        },
+    )
+
+
+@login_required
+def infolink_edit(
+    request: HttpRequest, pk: int, link_pk: int
+) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    info = get_object_or_404(InfoLink, pk=link_pk, investor=investor)
+    if request.method == 'POST':
+        form = InfoLinkForm(request.POST, instance=info)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'infoLinksChanged'
+            return response
+    else:
+        form = InfoLinkForm(instance=info)
+    return render(
+        request,
+        'crm/partials/info_link_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'post_url': reverse('crm:infolink_edit', args=[investor.pk, info.pk]),
         },
     )
 

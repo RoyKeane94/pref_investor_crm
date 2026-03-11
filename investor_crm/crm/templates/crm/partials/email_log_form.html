@@ -70,6 +70,7 @@
         <th class="py-1.5 px-1">With</th>
         <th class="py-1.5 px-1">Subject</th>
         <th class="py-1.5 px-1">Direction</th>
+        <th class="py-1.5 px-1 text-right"></th>
       </tr>
     </thead>
     <tbody class="text-grey" x-data="{ openNote: null }">
@@ -91,22 +92,33 @@
               {{ email.get_direction_display }}
             </span>
           </td>
+          <td class="py-1 text-right">
+            <button
+              type="button"
+              class="text-body-sm text-grey hover:text-accent"
+              hx-get="{% url 'crm:emaillog_edit' investor.pk email.pk %}"
+              hx-target="#modal-container"
+              hx-swap="innerHTML"
+              @click.stop>
+              Edit
+            </button>
+          </td>
         </tr>
         {% if email.notes %}
         <tr x-show="(showAll || {{ forloop.counter }} <= 5) && openNote === {{ email.pk }}">
-          <td colspan="4" class="py-2 px-3 bg-grey-card text-grey">
+          <td colspan="5" class="py-2 px-3 bg-grey-card text-grey">
             {{ email.notes|linebreaksbr }}
           </td>
         </tr>
         {% endif %}
       {% empty %}
         <tr>
-          <td colspan="4" class="py-2 text-grey">No emails logged.</td>
+          <td colspan="5" class="py-2 text-grey">No emails logged.</td>
         </tr>
       {% endfor %}
       {% if email_logs|length > 5 %}
         <tr x-show="!showAll" class="border-t border-grey-border">
-          <td colspan="4" class="py-2">
+          <td colspan="5" class="py-2">
             <button type="button" @click="showAll = true"
                     class="text-body-sm text-accent hover:underline font-medium">
               Show all ({{ email_logs|length }})

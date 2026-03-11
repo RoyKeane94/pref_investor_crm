@@ -78,13 +78,16 @@ class Investor(models.Model):
 
     @property
     def last_contacted(self):
-        """Return the most recent date from call_logs or email_logs, or None."""
+        """Return the most recent date from call_logs, email_logs or co_investments, or None."""
         from itertools import chain
 
         dates = list(
             chain(
                 self.call_logs.values_list('date', flat=True),
                 self.email_logs.values_list('date', flat=True),
+                self.co_investments.exclude(date__isnull=True).values_list(
+                    'date', flat=True
+                ),
             )
         )
         return max(dates) if dates else None
