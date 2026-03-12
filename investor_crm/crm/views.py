@@ -18,6 +18,7 @@ from .forms import (
     ContactForm,
     EmailLogForm,
     InfoLinkForm,
+    InvestorAboutForm,
     InvestorForm,
     LoginForm,
     OtherCommitmentForm,
@@ -306,6 +307,29 @@ def investor_edit(request: HttpRequest, pk: int) -> HttpResponse:
             'form': form,
             'title': 'Edit Investor',
             'post_url': reverse('crm:investor_edit', args=[investor.pk]),
+        },
+    )
+
+
+@login_required
+def investor_about_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    if request.method == 'POST':
+        form = InvestorAboutForm(request.POST, instance=investor)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'investorDetailChanged'
+            return response
+    else:
+        form = InvestorAboutForm(instance=investor)
+    return render(
+        request,
+        'crm/partials/investor_about_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'post_url': reverse('crm:investor_about_edit', args=[investor.pk]),
         },
     )
 

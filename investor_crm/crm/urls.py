@@ -9,6 +9,11 @@ urlpatterns = [
     path('investors/<int:pk>/', views.investor_detail, name='investor_detail'),
     path('investors/create/', views.investor_create, name='investor_create'),
     path('investors/<int:pk>/edit/', views.investor_edit, name='investor_edit'),
+    path(
+        'investors/<int:pk>/about/',
+        views.investor_about_edit,
+        name='investor_about_edit',
+    ),
     path('investors/<int:pk>/delete/', views.investor_delete, name='investor_delete'),
     path(
         'investors/<int:pk>/contacts/create/',

@@ -104,9 +104,11 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             'principal_contact',
             'website',
             'status',
+            'type',
             'ticket_size',
             'vdr_access',
             'vdr_access_date',
+            'meeting',
             'office',
             'responsibility',
             'intermediary',
@@ -172,6 +174,12 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             instance.save()
             self.save_m2m()
         return instance
+
+
+class InvestorAboutForm(TailwindFormMixin, forms.ModelForm):
+    class Meta:
+        model = Investor
+        fields = ['about']
 
 
 class ContactForm(TailwindFormMixin, forms.ModelForm):

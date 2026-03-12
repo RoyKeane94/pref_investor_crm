@@ -1,0 +1,47 @@
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">About {{ investor.name }}</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ field.label }}
+          </label>
+          {{ field }}
+          {% for error in field.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

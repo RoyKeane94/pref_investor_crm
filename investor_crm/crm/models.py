@@ -31,6 +31,24 @@ class Investor(models.Model):
         ('target_fund_iii', 'Target for Fund III'),
     ]
 
+    TYPE_CHOICES = [
+        ('asset_manager', 'Asset manager'),
+        ('bank', 'Bank'),
+        ('endowment_charity', 'Endowment/charity'),
+        ('fund_manager', 'Fund manager'),
+        ('fund_of_funds', 'Fund of funds'),
+        ('gatekeeper_consultant', 'Gatekeeper/consultant'),
+        ('hnw_uhnw', 'HNW/UHNW'),
+        ('insurance_company', 'Insurance company'),
+        ('investment_company_trust', 'Investment company/trust'),
+        ('pension_fund_company', 'Pension fund/company'),
+        ('lgps', 'LGPS'),
+        ('lgps_pool', 'LGPS pool'),
+        ('single_family_office', 'Single family office'),
+        ('swf_government', 'SWF/government'),
+        ('wealth_manager_pb_mfo', 'Wealth manager/PB/MFO'),
+    ]
+
     name = models.CharField(max_length=255)
     principal_contact = models.CharField(max_length=255, blank=True)
     website = models.URLField(blank=True)
@@ -38,6 +56,12 @@ class Investor(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default='target_fund_iii',
+    )
+    type = models.CharField(
+        max_length=30,
+        choices=TYPE_CHOICES,
+        blank=True,
+        default='',
     )
     ticket_size = models.DecimalField(
         max_digits=10,
@@ -48,6 +72,8 @@ class Investor(models.Model):
     )
     vdr_access = models.BooleanField(default=False)
     vdr_access_date = models.DateField(null=True, blank=True)
+    meeting = models.BooleanField(default=False)
+    about = models.TextField(blank=True)
     office = models.ForeignKey(
         'Office',
         on_delete=models.SET_NULL,

@@ -35,6 +35,19 @@
 
       <dl class="space-y-1 text-grey">
         <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Type</dt>
+          <dd class="text-navy">{{ investor.get_type_display|default:"—" }}</dd>
+        </div>
+        <div class="flex justify-between items-center">
+          <dt class="text-field-label uppercase text-grey">Meeting</dt>
+          <dd class="flex items-center space-x-2">
+            <span class="inline-block w-2 h-2 rounded-full {% if investor.meeting %}bg-vdr-active{% else %}bg-vdr-inactive{% endif %}"></span>
+            <span class="text-navy">
+              {% if investor.meeting %}Yes{% else %}No{% endif %}
+            </span>
+          </dd>
+        </div>
+        <div class="flex justify-between">
           <dt class="text-field-label uppercase text-grey">Principal</dt>
           <dd class="text-navy">{{ investor.principal_contact|default:"—" }}</dd>
         </div>
@@ -93,6 +106,20 @@
         </div>
         {% endif %}
       </dl>
+    </div>
+
+    <div class="border border-grey-border rounded-card p-4 bg-white">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-heading text-navy">About</div>
+        <button
+          class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+          hx-get="{% url 'crm:investor_about_edit' investor.pk %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+          {% if investor.about %}Edit{% else %}Add{% endif %}
+        </button>
+      </div>
+      <div class="text-grey whitespace-pre-wrap">{% if investor.about %}{{ investor.about }}{% else %}No details added.{% endif %}</div>
     </div>
 
     <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
