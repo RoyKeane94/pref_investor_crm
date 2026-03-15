@@ -204,8 +204,6 @@
         <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
           <tr>
             <th class="py-1.5 px-1">Name</th>
-            <th class="py-1.5 px-1">Role</th>
-            <th class="py-1.5 px-1">Email</th>
           </tr>
         </thead>
         <tbody class="text-grey">
@@ -213,25 +211,15 @@
             <tr x-show="showAll || {{ forloop.counter }} <= 5"
                 class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
               <td class="py-1 text-navy">{{ contact.name }}</td>
-              <td class="py-1">{{ contact.role }}</td>
-              <td class="py-1">
-                {% if contact.email %}
-                  <a href="mailto:{{ contact.email }}" class="underline">
-                    {{ contact.email }}
-                  </a>
-                {% else %}
-                  —
-                {% endif %}
-              </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="3" class="py-2 text-grey">No additional contacts.</td>
+              <td colspan="1" class="py-2 text-grey">No additional contacts.</td>
             </tr>
           {% endfor %}
           {% if contacts|length > 5 %}
             <tr x-show="!showAll" class="border-t border-grey-border">
-              <td colspan="3" class="py-2">
+              <td colspan="1" class="py-2">
                 <button type="button" @click="showAll = true"
                         class="text-body-sm text-accent hover:underline font-medium">
                   Show all ({{ contacts|length }})
@@ -252,7 +240,6 @@
     {% include "crm/partials/email_log_form.html" with show_form=False %}
     {% include "crm/partials/co_investment_form.html" with show_form=False %}
     {% include "crm/partials/commitment_form.html" with show_form=False %}
-    {% include "crm/partials/info_link_form.html" with show_form=False %}
   </section>
 </div>
 <script>
@@ -263,7 +250,6 @@
   document.body.addEventListener('emailLogsChanged', function () { window.location.reload(); });
   document.body.addEventListener('coinvestmentsChanged', function () { window.location.reload(); });
   document.body.addEventListener('commitmentsChanged', function () { window.location.reload(); });
-  document.body.addEventListener('infoLinksChanged', function () { window.location.reload(); });
   document.body.addEventListener('investorDetailChanged', function () { window.location.reload(); });
 </script>
 {% endblock %}

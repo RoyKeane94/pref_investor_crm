@@ -50,7 +50,7 @@
 {% else %}
 <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
   <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
-    <div class="text-heading text-navy">Other Commitments</div>
+    <div class="text-heading text-navy">Other Commitments to third party funds</div>
     <button
       class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
       hx-get="{% url 'crm:commitment_create' investor.pk %}"
@@ -96,7 +96,7 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="5" class="py-2 text-grey">No other commitments.</td>
+          <td colspan="5" class="py-2 text-grey">No other commitments to third party funds.</td>
         </tr>
       {% endfor %}
       {% if commitments|length > 5 %}
