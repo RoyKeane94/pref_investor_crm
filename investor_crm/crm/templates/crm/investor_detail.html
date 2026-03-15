@@ -10,17 +10,25 @@
       <div class="flex items-start justify-between mb-2">
         <div>
           <div class="text-page-title mb-1">{{ investor.name }}</div>
-          {% if investor.status == 'confirmed' %}
+          {% if investor.status == 'target_sma' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">
+              Target for SMA
+            </span>
+          {% elif investor.status == 'target_feeder_fund' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">
+              Target for Feeder Fund
+            </span>
+          {% elif investor.status == 'target_fund_iii' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">
+              Target for Fund III
+            </span>
+          {% elif investor.status == 'confirmed' %}
             <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">
               Confirmed
             </span>
-          {% elif investor.status == 'potential_sma' %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">
-              Potential SMA
-            </span>
           {% else %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">
-              Target Fund III
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-body-sm">
+              Other
             </span>
           {% endif %}
         </div>

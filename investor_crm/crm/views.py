@@ -185,9 +185,11 @@ def investor_list(request: HttpRequest) -> HttpResponse:
 
     stats = investors.aggregate(
         total=Count('id'),
-        confirmed=Count('id', filter=Q(status='confirmed')),
-        potential_sma=Count('id', filter=Q(status='potential_sma')),
+        target_sma=Count('id', filter=Q(status='target_sma')),
+        target_feeder_fund=Count('id', filter=Q(status='target_feeder_fund')),
         target_fund_iii=Count('id', filter=Q(status='target_fund_iii')),
+        confirmed=Count('id', filter=Q(status='confirmed')),
+        other=Count('id', filter=Q(status='other')),
     )
 
     responsibilities = Responsibility.objects.all()
