@@ -279,7 +279,8 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
         direction_word = 'Inbound' if email.direction == 'inbound' else 'Outbound'
         with_name = email.with_display or ''
         subject_part = f" — {email.subject}" if email.subject else ''
-        summary = f"{direction_word} email {with_name and 'with ' + with_name}{subject_part}"
+        prep = 'from' if email.direction == 'inbound' else 'to'
+        summary = f"{direction_word} email {with_name and prep + ' ' + with_name}{subject_part}"
         timeline_items.append(
             {
                 'date': email.date,
