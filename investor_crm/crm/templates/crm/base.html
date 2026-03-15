@@ -57,7 +57,21 @@
         if (ev.detail && ev.detail.target && typeof Alpine !== 'undefined') {
           Alpine.initTree(ev.detail.target);
         }
+        if (ev.detail && ev.detail.target && ev.detail.target.id === 'modal-container') {
+          if (!ev.detail.target.innerHTML.trim()) {
+            document.body.style.overflow = '';
+          }
+        }
       });
+      var modalEl = document.getElementById('modal-container');
+      if (modalEl) {
+        var observer = new MutationObserver(function() {
+          if (!modalEl.innerHTML.trim()) {
+            document.body.style.overflow = '';
+          }
+        });
+        observer.observe(modalEl, { childList: true, subtree: true });
+      }
     });
   </script>
 </head>

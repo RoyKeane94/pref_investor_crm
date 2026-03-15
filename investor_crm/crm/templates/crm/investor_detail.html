@@ -67,7 +67,19 @@
         </div>
         <div class="flex justify-between">
           <dt class="text-field-label uppercase text-grey">Responsibility</dt>
-          <dd class="text-navy">{{ investor.responsibility|default:"—" }}</dd>
+          <dd class="text-navy">
+            {% if investor.responsibility %}
+              {% if investor.responsibility.name == "Intermediary" %}
+                {{ investor.intermediary.name|default:"—" }}
+              {% elif investor.responsibility.name == "Prefequity" %}
+                Prefequity{% if investor.prefequity_owner %} ({{ investor.prefequity_owner }}){% endif %}
+              {% else %}
+                {{ investor.responsibility.name }}
+              {% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
         </div>
         <div class="flex justify-between items-center">
           <dt class="text-field-label uppercase text-grey">VDR Access</dt>

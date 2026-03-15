@@ -111,6 +111,7 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             'meeting',
             'office',
             'responsibility',
+            'prefequity_owner',
             'intermediary',
         ]
         widgets = {
@@ -131,6 +132,8 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             if name == 'office':
                 new_fields['office_name'] = office_name
         self.fields = new_fields
+        self.fields['prefequity_owner'].required = False
+        self.fields['prefequity_owner'].label = 'Prefequity Owner'
 
     def clean(self):
         cleaned = super().clean()

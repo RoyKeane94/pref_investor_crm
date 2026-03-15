@@ -93,6 +93,18 @@ class Investor(models.Model):
         null=True,
         blank=True,
     )
+    prefequity_owner = models.CharField(
+        max_length=10,
+        choices=[
+            ('TD', 'TD'),
+            ('NP', 'NP'),
+            ('JCP', 'JCP'),
+            ('TB', 'TB'),
+            ('PW', 'PW'),
+        ],
+        blank=True,
+        default='',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

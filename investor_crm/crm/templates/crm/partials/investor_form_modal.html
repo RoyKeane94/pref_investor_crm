@@ -1,66 +1,71 @@
 {% load crm_tags %}
-<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
-  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6">
-    <div class="flex items-center justify-between mb-4">
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50 p-4" style="overflow: hidden;">
+  <div class="bg-white rounded-modal shadow-xl w-full max-w-lg flex flex-col" style="max-height: 90vh;">
+    <div class="flex items-center justify-between p-6 pb-4 shrink-0 border-b border-grey-border">
       <h2 class="text-heading text-navy">{{ title }}</h2>
       <button
         type="button"
-        class="text-grey text-body-sm"
-        onclick="document.getElementById('modal-container').innerHTML=''">
+        class="text-grey text-body-sm text-xl leading-none"
+        onclick="document.body.style.overflow=''; document.getElementById('modal-container').innerHTML=''">
         ×
       </button>
     </div>
-    <form
-      method="post"
-      action="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
-      hx-post="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
-      hx-target="#modal-container"
-      hx-swap="innerHTML"
-      class="space-y-4 text-body-sm">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <div class="space-y-3">
-        {% for field in form %}
-          <div data-field-name="{{ field.name }}">
-            <label class="block text-field-label uppercase text-grey mb-1">
-              {{ field.label }}
-            </label>
-            {% if field|is_select %}
-              {% include "crm/partials/custom_select.html" with field=field %}
-            {% else %}
-              {{ field }}
-            {% endif %}
-            {% if field.help_text %}
-              <p class="text-xs text-grey mt-1">{{ field.help_text }}</p>
-            {% endif %}
-            {% for error in field.errors %}
-              <p class="text-xs text-danger mt-1">{{ error }}</p>
-            {% endfor %}
-          </div>
-        {% endfor %}
-      </div>
-      <div class="flex justify-end space-x-2 pt-4">
+    <div class="overflow-y-auto px-6 py-4" style="max-height: calc(90vh - 80px);">
+      <form
+        method="post"
+        action="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
+        hx-post="{% if post_url %}{{ post_url }}{% else %}{% url 'crm:investor_create' %}{% endif %}"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        class="space-y-4 text-body-sm pb-6">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="space-y-3">
+          {% for field in form %}
+            <div data-field-name="{{ field.name }}">
+              <label class="block text-field-label uppercase text-grey mb-1">
+                {{ field.label }}
+              </label>
+              {% if field|is_select %}
+                {% include "crm/partials/custom_select.html" with field=field %}
+              {% else %}
+                {{ field }}
+              {% endif %}
+              {% if field.help_text %}
+                <p class="text-xs text-grey mt-1">{{ field.help_text }}</p>
+              {% endif %}
+              {% for error in field.errors %}
+                <p class="text-xs text-danger mt-1">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="flex justify-end space-x-2 pt-4">
         <button
           type="button"
           class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
-          onclick="document.getElementById('modal-container').innerHTML=''">
+          onclick="document.body.style.overflow=''; document.getElementById('modal-container').innerHTML=''">
           Cancel
         </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
-          Save
-        </button>
-      </div>
-    </form>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
 (function () {
+  document.body.style.overflow = 'hidden';
+
   const responsibilityField = document.getElementById('id_responsibility');
   const intermediaryRow = document.querySelector('[data-field-name="intermediary"]');
   const intermediaryNameRow = document.querySelector('[data-field-name="intermediary_name"]');
+  const prefequityOwnerRow = document.querySelector('[data-field-name="prefequity_owner"]');
   const vdrAccessField = document.getElementById('id_vdr_access');
   const vdrDateRow = document.querySelector('[data-field-name="vdr_access_date"]');
 
@@ -68,11 +73,15 @@
     if (!responsibilityField) return;
     const label = responsibilityField.options[responsibilityField.selectedIndex]?.text || '';
     const isIntermediary = label.trim() === 'Intermediary';
+    const isPrefequity = label.trim() === 'Prefequity';
     if (intermediaryRow) {
       intermediaryRow.style.display = isIntermediary ? '' : 'none';
     }
     if (intermediaryNameRow) {
       intermediaryNameRow.style.display = isIntermediary ? '' : 'none';
+    }
+    if (prefequityOwnerRow) {
+      prefequityOwnerRow.style.display = isPrefequity ? '' : 'none';
     }
   }
 

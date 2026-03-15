@@ -52,7 +52,17 @@
             </td>
             <td class="px-4 py-2 text-grey">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</td>
             <td class="px-4 py-2 text-grey-dark">
-              {{ investor.responsibility|default:"—" }}
+              {% if investor.responsibility %}
+                {% if investor.responsibility.name == "Intermediary" %}
+                  {{ investor.intermediary.name|default:"—" }}
+                {% elif investor.responsibility.name == "Prefequity" %}
+                  Prefequity{% if investor.prefequity_owner %} ({{ investor.prefequity_owner }}){% endif %}
+                {% else %}
+                  {{ investor.responsibility.name }}
+                {% endif %}
+              {% else %}
+                —
+              {% endif %}
             </td>
             <td class="px-4 py-2">
               {% if investor.latest_contact_date %}

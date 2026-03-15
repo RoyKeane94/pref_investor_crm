@@ -74,7 +74,7 @@ def _annotated_investors():
             ),
             Value(date.min, output_field=DateField()),
         ),
-    )
+    ).select_related('responsibility', 'intermediary')
 
 
 def register(request: HttpRequest) -> HttpResponse:
@@ -230,7 +230,10 @@ def reminders_banner(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
-    investor = get_object_or_404(Investor, pk=pk)
+    investor = get_object_or_404(
+        Investor.objects.select_related('responsibility', 'intermediary'),
+        pk=pk,
+    )
 
     reminders = investor.reminders.filter(is_done=False).order_by('due_date')
     contacts = investor.contacts.all()
