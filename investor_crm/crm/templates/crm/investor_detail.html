@@ -239,6 +239,7 @@
   <section class="col-span-12 md:col-span-8 space-y-4 text-body-sm">
     {% include "crm/partials/activity_timeline.html" %}
 
+    {% include "crm/partials/meeting_log_form.html" with show_form=False %}
     {% include "crm/partials/call_log_form.html" with show_form=False %}
     {% include "crm/partials/email_log_form.html" with show_form=False %}
     {% include "crm/partials/co_investment_form.html" with show_form=False %}
@@ -249,6 +250,7 @@
 <script>
   document.body.addEventListener('remindersChanged', function () { window.location.reload(); });
   document.body.addEventListener('contactsChanged', function () { window.location.reload(); });
+  document.body.addEventListener('meetingLogsChanged', function () { window.location.reload(); });
   document.body.addEventListener('callLogsChanged', function () { window.location.reload(); });
   document.body.addEventListener('emailLogsChanged', function () { window.location.reload(); });
   document.body.addEventListener('coinvestmentsChanged', function () { window.location.reload(); });

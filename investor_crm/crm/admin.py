@@ -8,6 +8,7 @@ from .models import (
     InfoLink,
     Intermediary,
     Investor,
+    MeetingLog,
     Office,
     OtherCommitment,
     Reminder,
@@ -50,6 +51,13 @@ class InvestorAdmin(admin.ModelAdmin):
 class ContactAdmin(admin.ModelAdmin):
     list_display = ('name', 'investor', 'role', 'email')
     search_fields = ('name', 'email', 'investor__name')
+
+
+@admin.register(MeetingLog)
+class MeetingLogAdmin(admin.ModelAdmin):
+    list_display = ('investor', 'date', 'participants_display', 'created_at')
+    list_filter = ('date',)
+    search_fields = ('investor__name', 'notes')
 
 
 @admin.register(CallLog)

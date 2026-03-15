@@ -22,6 +22,7 @@ from .forms import (
     InvestorAboutForm,
     InvestorForm,
     LoginForm,
+    MeetingLogForm,
     OtherCommitmentForm,
     RegisterForm,
     ReminderForm,
@@ -33,6 +34,7 @@ from .models import (
     EmailLog,
     InfoLink,
     Investor,
+    MeetingLog,
     Office,
     OtherCommitment,
     Reminder,
@@ -59,6 +61,11 @@ def _annotated_investors():
         .order_by('-date')
         .values('date')[:1]
     )
+    latest_meeting = (
+        MeetingLog.objects.filter(investor=OuterRef('pk'))
+        .order_by('-date')
+        .values('date')[:1]
+    )
 
     return Investor.objects.annotate(
         last_call=Subquery(latest_call, output_field=DateField()),
@@ -66,11 +73,13 @@ def _annotated_investors():
         last_coinvestment=Subquery(
             latest_coinvestment, output_field=DateField()
         ),
+        last_meeting=Subquery(latest_meeting, output_field=DateField()),
         latest_contact_date=NullIf(
             Greatest(
                 Coalesce('last_call', date.min),
                 Coalesce('last_email', date.min),
                 Coalesce('last_coinvestment', date.min),
+                Coalesce('last_meeting', date.min),
             ),
             Value(date.min, output_field=DateField()),
         ),
@@ -237,6 +246,7 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
     reminders = investor.reminders.filter(is_done=False).order_by('due_date')
     contacts = investor.contacts.all()
+    meeting_logs = investor.meeting_logs.all()
     call_logs = investor.call_logs.select_related('contact').all()
     email_logs = investor.email_logs.select_related('contact').all()
     co_investments = investor.co_investments.all()
@@ -244,6 +254,17 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
     info_links = investor.info_links.all()
 
     timeline_items = []
+    for meeting in meeting_logs:
+        parts = meeting.participants_display()
+        summary = f"Meeting ({parts})" if parts != '—' else "Meeting"
+        timeline_items.append(
+            {
+                'date': meeting.date,
+                'type': 'meeting',
+                'summary': summary,
+                'notes': meeting.notes,
+            }
+        )
     for call in call_logs:
         summary = f"Call with {call.with_display}" if call.with_display else "Call"
         timeline_items.append(
@@ -286,6 +307,7 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
         'investor': investor,
         'reminders': reminders,
         'contacts': contacts,
+        'meeting_logs': meeting_logs,
         'call_logs': call_logs,
         'email_logs': email_logs,
         'co_investments': co_investments,
@@ -479,6 +501,71 @@ def calllog_delete(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
         call.delete()
         response = HttpResponse(status=204)
         response['HX-Trigger'] = 'callLogsChanged'
+        return response
+    return HttpResponseBadRequest('Invalid request')
+
+
+@login_required
+def meetinglog_create(request: HttpRequest, pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    if request.method == 'POST':
+        form = MeetingLogForm(request.POST, investor=investor)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'meetingLogsChanged'
+            return response
+    else:
+        form = MeetingLogForm(investor=investor)
+    return render(
+        request,
+        'crm/partials/meeting_log_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'title': 'Add Meeting Log',
+            'post_url': reverse('crm:meetinglog_create', args=[investor.pk]),
+        },
+    )
+
+
+@login_required
+def meetinglog_edit(request: HttpRequest, pk: int, meeting_pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    meeting = get_object_or_404(MeetingLog, pk=meeting_pk, investor=investor)
+    if request.method == 'POST':
+        form = MeetingLogForm(request.POST, investor=investor, instance=meeting)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'meetingLogsChanged'
+            return response
+    else:
+        form = MeetingLogForm(investor=investor, instance=meeting)
+    return render(
+        request,
+        'crm/partials/meeting_log_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'show_form': True,
+            'title': 'Edit Meeting Log',
+            'post_url': reverse('crm:meetinglog_edit', args=[investor.pk, meeting.pk]),
+        },
+    )
+
+
+@login_required
+def meetinglog_delete(
+    request: HttpRequest, pk: int, meeting_pk: int
+) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    meeting = get_object_or_404(MeetingLog, pk=meeting_pk, investor=investor)
+    if request.method == 'POST':
+        meeting.delete()
+        response = HttpResponse(status=204)
+        response['HX-Trigger'] = 'meetingLogsChanged'
         return response
     return HttpResponseBadRequest('Invalid request')
 

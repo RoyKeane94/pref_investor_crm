@@ -13,8 +13,10 @@ from .models import (
     InfoLink,
     Intermediary,
     Investor,
+    MeetingLog,
     Office,
     OtherCommitment,
+    PARTICIPANT_CHOICES,
     Reminder,
     Responsibility,
 )
@@ -198,6 +200,36 @@ def _with_choices_for_investor(investor: Investor) -> Iterable[Tuple[str, str]]:
     for contact in investor.contacts.all():
         choices.append((f'contact:{contact.pk}', contact.name))
     return choices
+
+
+class MeetingLogForm(TailwindFormMixin, forms.ModelForm):
+    participants = forms.MultipleChoiceField(
+        label='Prefequity participants',
+        choices=PARTICIPANT_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = MeetingLog
+        fields = ['date', 'participants', 'notes']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args: Any, investor: Investor, **kwargs: Any) -> None:
+        self.investor = investor
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.participants:
+            self.initial['participants'] = self.instance.participants
+
+    def save(self, commit: bool = True) -> MeetingLog:
+        instance: MeetingLog = super().save(commit=False)
+        instance.investor = self.investor
+        instance.participants = self.cleaned_data.get('participants') or []
+        if commit:
+            instance.save()
+        return instance
 
 
 class CallLogForm(TailwindFormMixin, forms.ModelForm):

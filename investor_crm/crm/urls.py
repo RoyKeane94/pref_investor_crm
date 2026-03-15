@@ -41,6 +41,21 @@ urlpatterns = [
         name='calllog_edit',
     ),
     path(
+        'investors/<int:pk>/meetings/create/',
+        views.meetinglog_create,
+        name='meetinglog_create',
+    ),
+    path(
+        'investors/<int:pk>/meetings/<int:meeting_pk>/edit/',
+        views.meetinglog_edit,
+        name='meetinglog_edit',
+    ),
+    path(
+        'investors/<int:pk>/meetings/<int:meeting_pk>/delete/',
+        views.meetinglog_delete,
+        name='meetinglog_delete',
+    ),
+    path(
         'investors/<int:pk>/emails/create/',
         views.emaillog_create,
         name='emaillog_create',

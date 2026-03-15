@@ -10,6 +10,12 @@ def is_select(field):
     return isinstance(field.field.widget, (forms.Select, forms.NullBooleanSelect))
 
 
+@register.filter
+def is_checkbox_multiple(field):
+    """Return True if the form field uses CheckboxSelectMultiple."""
+    return isinstance(field.field.widget, forms.CheckboxSelectMultiple)
+
+
 def _ordinal(n):
     """Return ordinal suffix for n: 1->'st', 2->'nd', 3->'rd', 4->'th', etc."""
     if 10 <= n % 100 <= 20:

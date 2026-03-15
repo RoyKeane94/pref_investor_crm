@@ -116,7 +116,7 @@ class Investor(models.Model):
 
     @property
     def last_contacted(self):
-        """Return the most recent date from call_logs, email_logs or co_investments, or None."""
+        """Return the most recent date from call_logs, email_logs, co_investments or meeting_logs, or None."""
         from itertools import chain
 
         dates = list(
@@ -126,6 +126,7 @@ class Investor(models.Model):
                 self.co_investments.exclude(date__isnull=True).values_list(
                     'date', flat=True
                 ),
+                self.meeting_logs.values_list('date', flat=True),
             )
         )
         return max(dates) if dates else None
@@ -142,6 +143,36 @@ class Contact(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+PARTICIPANT_CHOICES = [
+    ('TD', 'TD'),
+    ('NP', 'NP'),
+    ('JCP', 'JCP'),
+    ('TB', 'TB'),
+    ('PW', 'PW'),
+]
+
+
+class MeetingLog(models.Model):
+    investor = models.ForeignKey(
+        Investor, on_delete=models.CASCADE, related_name='meeting_logs'
+    )
+    date = models.DateField()
+    participants = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Prefequity participants (TD, NP, JCP, TB, PW)',
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def participants_display(self) -> str:
+        """Return comma-separated participant codes."""
+        return ', '.join(self.participants) if self.participants else '—'
 
 
 class CallLog(models.Model):
