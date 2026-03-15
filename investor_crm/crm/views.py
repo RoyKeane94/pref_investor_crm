@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from itertools import chain
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, DateField, OuterRef, Q, Subquery
@@ -132,8 +133,9 @@ def investor_list(request: HttpRequest) -> HttpResponse:
     search = request.GET.get('q', '').strip()
     status = request.GET.get('status') or ''
     responsibility_id = request.GET.get('responsibility') or ''
-    office_id = request.GET.get('office') or ''
     sort = request.GET.get('sort') or 'name'
+    default_sort_dir = 'desc' if sort == 'last_contacted' else 'asc'
+    sort_dir = request.GET.get('sort_dir') or default_sort_dir
 
     if search:
         investors = investors.filter(
@@ -145,28 +147,53 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         investors = investors.filter(status=status)
     if responsibility_id:
         investors = investors.filter(responsibility_id=responsibility_id)
-    if office_id:
-        investors = investors.filter(office_id=office_id)
 
+    prefix = '' if sort_dir == 'asc' else '-'
     if sort == 'last_contacted':
-        investors = investors.order_by('-latest_contact_date', 'name')
+        investors = investors.order_by(
+            f'{prefix}latest_contact_date', 'name'
+        )
+    elif sort == 'principal':
+        investors = investors.order_by(
+            f'{prefix}principal_contact', 'name' if sort_dir == 'asc' else '-name'
+        )
+    elif sort == 'status':
+        investors = investors.order_by(
+            f'{prefix}status', 'name' if sort_dir == 'asc' else '-name'
+        )
+    elif sort == 'office':
+        investors = investors.order_by(
+            f'{prefix}office__name', 'name' if sort_dir == 'asc' else '-name'
+        )
+    elif sort == 'responsibility':
+        investors = investors.order_by(
+            f'{prefix}responsibility__name', 'name' if sort_dir == 'asc' else '-name'
+        )
     else:
-        investors = investors.order_by('name')
+        investors = investors.order_by(
+            f'{prefix}name'
+        )
 
     stats = investors.aggregate(
         total=Count('id'),
         confirmed=Count('id', filter=Q(status='confirmed')),
         potential_sma=Count('id', filter=Q(status='potential_sma')),
         target_fund_iii=Count('id', filter=Q(status='target_fund_iii')),
-        vdr_access=Count('id', filter=Q(vdr_access=True)),
     )
 
     responsibilities = Responsibility.objects.all()
-    offices = Office.objects.all().order_by('name')
     reminders = _reminder_qs()
     responsibility_choices = [('', 'All')] + [(r.id, r.name) for r in responsibilities]
-    office_choices = [('', 'All')] + [(o.id, o.name) for o in offices]
     status_choices = [('', 'All')] + list(Investor.STATUS_CHOICES)
+
+    filter_params = {}
+    if search:
+        filter_params['q'] = search
+    if status:
+        filter_params['status'] = status
+    if responsibility_id:
+        filter_params['responsibility'] = responsibility_id
+    filter_params_str = urlencode(filter_params)
 
     context = {
         'investors': investors,
@@ -174,11 +201,12 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         'responsibilities': responsibilities,
         'status_choices': status_choices,
         'responsibility_choices': responsibility_choices,
-        'office_choices': office_choices,
         'search': search,
         'status_filter': status,
         'responsibility_filter': responsibility_id,
-        'office_filter': office_id,
+        'sort': sort,
+        'sort_dir': sort_dir,
+        'filter_params_str': filter_params_str,
         'reminders': reminders,
     }
     is_htmx = (

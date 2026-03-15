@@ -63,7 +63,7 @@
 </head>
 <body class="bg-white text-navy font-sans">
   <header class="w-full border-b border-grey-border bg-white">
-    <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+    <div class="{% block header_class %}max-w-6xl{% endblock %} mx-auto flex items-center justify-between px-6 py-4">
       <a href="{% url 'crm:investor_list' %}" class="flex items-center space-x-3 hover:opacity-80">
         <div class="w-2 h-2 rounded-full bg-accent"></div>
         <div>
@@ -103,7 +103,7 @@
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-6 py-6">
+  <main class="{% block main_class %}max-w-6xl{% endblock %} mx-auto px-6 py-6">
     {% block content %}{% endblock %}
   </main>
 
