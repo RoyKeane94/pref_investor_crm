@@ -35,18 +35,30 @@
           {% endfor %}
         </div>
       {% endfor %}
-      <div class="flex justify-end space-x-2 pt-4">
-        <button
-          type="button"
-          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
-          onclick="document.getElementById('modal-container').innerHTML=''">
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
-          Save
-        </button>
+      <div class="flex justify-between pt-4">
+        <div>
+          {% if delete_url %}
+            <form method="post" action="{{ delete_url }}" hx-post="{{ delete_url }}" hx-target="#modal-container" hx-swap="innerHTML" hx-confirm="Delete this co-investment?" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="px-3 py-2 rounded-badge bg-danger text-white text-body-sm">
+                Delete
+              </button>
+            </form>
+          {% endif %}
+        </div>
+        <div class="flex space-x-2">
+          <button
+            type="button"
+            class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+            onclick="document.getElementById('modal-container').innerHTML=''">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+            Save
+          </button>
+        </div>
       </div>
     </form>
   </div>

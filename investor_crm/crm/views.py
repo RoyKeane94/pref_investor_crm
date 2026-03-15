@@ -492,6 +492,7 @@ def calllog_edit(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:calllog_edit', args=[investor.pk, call.pk]),
+            'delete_url': reverse('crm:calllog_delete', args=[investor.pk, call.pk]),
         },
     )
 
@@ -555,6 +556,7 @@ def meetinglog_edit(request: HttpRequest, pk: int, meeting_pk: int) -> HttpRespo
             'show_form': True,
             'title': 'Edit Meeting Log',
             'post_url': reverse('crm:meetinglog_edit', args=[investor.pk, meeting.pk]),
+            'delete_url': reverse('crm:meetinglog_delete', args=[investor.pk, meeting.pk]),
         },
     )
 
@@ -618,6 +620,7 @@ def emaillog_edit(request: HttpRequest, pk: int, email_pk: int) -> HttpResponse:
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:emaillog_edit', args=[investor.pk, email.pk]),
+            'delete_url': reverse('crm:emaillog_delete', args=[investor.pk, email.pk]),
         },
     )
 
@@ -685,6 +688,7 @@ def coinvestment_edit(
             'investor': investor,
             'show_form': True,
             'post_url': reverse('crm:coinvestment_edit', args=[investor.pk, coinvest.pk]),
+            'delete_url': reverse('crm:coinvestment_delete', args=[investor.pk, coinvest.pk]),
         },
     )
 
