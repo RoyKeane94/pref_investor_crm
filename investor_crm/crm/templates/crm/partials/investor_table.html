@@ -21,7 +21,7 @@
             <a href="?{% if filter_params_str %}{{ filter_params_str }}&amp;{% endif %}sort=office&amp;sort_dir={% if sort == 'office' %}{% if sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% else %}asc{% endif %}" class="hover:text-accent">Office</a>
           </th>
           <th class="px-4 py-2">
-            <a href="?{% if filter_params_str %}{{ filter_params_str }}&amp;{% endif %}sort=responsibility&amp;sort_dir={% if sort == 'responsibility' %}{% if sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% else %}asc{% endif %}" class="hover:text-accent">Responsibility</a>
+            <a href="?{% if filter_params_str %}{{ filter_params_str }}&amp;{% endif %}sort=responsibility&amp;sort_dir={% if sort == 'responsibility' %}{% if sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% else %}asc{% endif %}" class="hover:text-accent">Intermediary</a>
           </th>
           <th class="px-4 py-2">
             <a href="?{% if filter_params_str %}{{ filter_params_str }}&amp;{% endif %}sort=last_contacted&amp;sort_dir={% if sort == 'last_contacted' %}{% if sort_dir == 'asc' %}desc{% else %}asc{% endif %}{% else %}desc{% endif %}" class="hover:text-accent">Last Contacted</a>
@@ -54,16 +54,10 @@
             </td>
             <td class="px-4 py-2 text-grey">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</td>
             <td class="px-4 py-2 text-grey-dark">
-              {% if investor.responsibility %}
-                {% if investor.responsibility.name == "Intermediary" %}
-                  {{ investor.intermediary.name|default:"—" }}
-                {% elif investor.responsibility.name == "Prefequity" %}
-                  Prefequity{% if investor.prefequity_owner %} ({{ investor.prefequity_owner }}){% endif %}
-                {% else %}
-                  {{ investor.responsibility.name }}
-                {% endif %}
+              {% if investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
+                {{ investor.intermediary.name }}
               {% else %}
-                —
+                NA
               {% endif %}
             </td>
             <td class="px-4 py-2">
