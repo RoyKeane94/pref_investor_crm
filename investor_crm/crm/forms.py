@@ -116,6 +116,9 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             'prefequity_owner',
             'intermediary',
         ]
+        labels = {
+            'ticket_size': 'Typical Ticket Size',
+        }
         widgets = {
             'ticket_size': forms.NumberInput(attrs={'step': '0.1'}),
             'vdr_access_date': forms.DateInput(attrs={'type': 'date'}),
