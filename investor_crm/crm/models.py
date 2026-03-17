@@ -29,7 +29,7 @@ class Investor(models.Model):
         ('target_sma', 'Target for SMA'),
         ('target_feeder_fund', 'Target for Feeder Fund'),
         ('target_fund_iii', 'Target for Fund III'),
-        ('confirmed', 'Confirmed'),
+        ('confirmed', 'Revisit'),
         ('other', 'Other'),
     ]
 
@@ -54,10 +54,10 @@ class Investor(models.Model):
     name = models.CharField(max_length=255)
     principal_contact = models.CharField(max_length=255, blank=True)
     website = models.URLField(blank=True)
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='target_fund_iii',
+    statuses = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of status values (target_sma, target_feeder_fund, etc.)',
     )
     type = models.CharField(
         max_length=30,

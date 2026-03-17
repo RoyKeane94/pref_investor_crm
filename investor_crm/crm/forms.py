@@ -98,6 +98,12 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
     intermediary_name = forms.CharField(
         required=False, label='New intermediary name (if not in list)'
     )
+    statuses = forms.MultipleChoiceField(
+        label='Status',
+        choices=Investor.STATUS_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     class Meta:
         model = Investor
@@ -105,7 +111,6 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             'name',
             'principal_contact',
             'website',
-            'status',
             'type',
             'ticket_size',
             'vdr_access',
@@ -139,6 +144,8 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
         self.fields = new_fields
         self.fields['prefequity_owner'].required = False
         self.fields['prefequity_owner'].label = 'Prefequity Owner'
+        if self.instance and self.instance.pk and self.instance.statuses:
+            self.initial['statuses'] = self.instance.statuses
 
     def clean(self):
         cleaned = super().clean()
@@ -178,6 +185,8 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             )
             instance.office = office
 
+        statuses = self.cleaned_data.get('statuses') or []
+        instance.statuses = list(statuses) if statuses else (['target_fund_iii'] if not instance.pk else [])
         if commit:
             instance.save()
             self.save_m2m()
@@ -193,7 +202,7 @@ class InvestorAboutForm(TailwindFormMixin, forms.ModelForm):
 class ContactForm(TailwindFormMixin, forms.ModelForm):
     class Meta:
         model = Contact
-        fields = ['name', 'role', 'email', 'phone']
+        fields = ['name']
 
 
 def _with_choices_for_investor(investor: Investor) -> Iterable[Tuple[str, str]]:
@@ -351,12 +360,36 @@ class CoInvestmentForm(TailwindFormMixin, forms.ModelForm):
 
 
 class OtherCommitmentForm(TailwindFormMixin, forms.ModelForm):
+    year = forms.IntegerField(
+        label='Year',
+        required=False,
+        min_value=1900,
+        max_value=2100,
+        widget=forms.NumberInput(attrs={'placeholder': 'e.g. 2024'}),
+    )
+
     class Meta:
         model = OtherCommitment
-        fields = ['fund', 'amount', 'date', 'notes']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-        }
+        fields = ['fund', 'amount', 'notes']
+        exclude = ['date']
+        field_order = ['fund', 'amount', 'year', 'notes']
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.date:
+            self.initial['year'] = self.instance.date.year
+
+    def save(self, commit: bool = True) -> OtherCommitment:
+        instance: OtherCommitment = super().save(commit=False)
+        year = self.cleaned_data.get('year')
+        if year:
+            from datetime import date
+            instance.date = date(year, 1, 1)
+        else:
+            instance.date = None
+        if commit:
+            instance.save()
+        return instance
 
 
 class InfoLinkForm(TailwindFormMixin, forms.ModelForm):

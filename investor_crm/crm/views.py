@@ -153,7 +153,7 @@ def investor_list(request: HttpRequest) -> HttpResponse:
             | Q(office__name__icontains=search)
         )
     if status:
-        investors = investors.filter(status=status)
+        investors = investors.filter(statuses__contains=[status])
     if responsibility_id:
         investors = investors.filter(responsibility_id=responsibility_id)
 
@@ -168,7 +168,7 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         )
     elif sort == 'status':
         investors = investors.order_by(
-            f'{prefix}status', 'name' if sort_dir == 'asc' else '-name'
+            f'{prefix}statuses', 'name' if sort_dir == 'asc' else '-name'
         )
     elif sort == 'office':
         investors = investors.order_by(
@@ -185,11 +185,11 @@ def investor_list(request: HttpRequest) -> HttpResponse:
 
     stats = investors.aggregate(
         total=Count('id'),
-        target_sma=Count('id', filter=Q(status='target_sma')),
-        target_feeder_fund=Count('id', filter=Q(status='target_feeder_fund')),
-        target_fund_iii=Count('id', filter=Q(status='target_fund_iii')),
-        confirmed=Count('id', filter=Q(status='confirmed')),
-        other=Count('id', filter=Q(status='other')),
+        target_sma=Count('id', filter=Q(statuses__contains=['target_sma'])),
+        target_feeder_fund=Count('id', filter=Q(statuses__contains=['target_feeder_fund'])),
+        target_fund_iii=Count('id', filter=Q(statuses__contains=['target_fund_iii'])),
+        confirmed=Count('id', filter=Q(statuses__contains=['confirmed'])),
+        other=Count('id', filter=Q(statuses__contains=['other'])),
     )
 
     responsibilities = Responsibility.objects.all()

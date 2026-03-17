@@ -36,14 +36,14 @@ class InvestorAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'principal_contact',
-        'status',
+        'statuses',
         'ticket_size',
         'office',
         'responsibility',
         'intermediary',
         'vdr_access',
     )
-    list_filter = ('status', 'responsibility', 'office', 'intermediary', 'vdr_access')
+    list_filter = ('responsibility', 'office', 'intermediary', 'vdr_access')
     search_fields = ('name', 'principal_contact', 'office__name')
 
 

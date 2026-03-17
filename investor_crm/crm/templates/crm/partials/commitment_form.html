@@ -50,7 +50,7 @@
 {% else %}
 <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
   <div class="flex items-center justify-between mb-2 -mx-4 -mt-4 px-4 py-3 rounded-t-card bg-grey-border border-b border-grey-border">
-    <div class="text-heading text-navy">Other Commitments to third party funds</div>
+    <div class="text-heading text-navy">Commitments to Third Party Funds</div>
     <button
       class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
       hx-get="{% url 'crm:commitment_create' investor.pk %}"
@@ -64,7 +64,7 @@
       <tr>
         <th class="py-1.5 px-1">Fund / Vehicle</th>
         <th class="py-1.5 px-1">Amount (£m)</th>
-        <th class="py-1.5 px-1">Date</th>
+        <th class="py-1.5 px-1">Year</th>
         <th class="py-1.5 px-1">Notes</th>
         <th class="py-1.5 px-1 text-right"></th>
       </tr>
@@ -81,7 +81,7 @@
               —
             {% endif %}
           </td>
-          <td class="py-1">{% if c.date %}{{ c.date|date_ordinal }}{% else %}—{% endif %}</td>
+          <td class="py-1">{% if c.date %}{{ c.date.year }}{% else %}—{% endif %}</td>
           <td class="py-1">{{ c.notes|default:"—" }}</td>
           <td class="py-1 text-right">
             <button
@@ -96,7 +96,7 @@
         </tr>
       {% empty %}
         <tr>
-          <td colspan="5" class="py-2 text-grey">No other commitments to third party funds.</td>
+          <td colspan="5" class="py-2 text-grey">No commitments to third party funds.</td>
         </tr>
       {% endfor %}
       {% if commitments|length > 5 %}

@@ -26,7 +26,18 @@
               <label class="block text-field-label uppercase text-grey mb-1">
                 {{ field.label }}
               </label>
-              {% if field|is_select %}
+              {% if field|is_checkbox_multiple %}
+                <div class="flex flex-wrap gap-3 pt-1">
+                  {% for choice in field.field.choices %}
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" name="{{ field.name }}" value="{{ choice.0 }}"
+                             {% if field.value and choice.0 in field.value %}checked{% endif %}
+                             class="rounded border-grey-border text-accent">
+                      <span class="text-navy">{{ choice.1 }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              {% elif field|is_select %}
                 {% include "crm/partials/custom_select.html" with field=field %}
               {% else %}
                 {{ field }}
