@@ -56,7 +56,7 @@
           </dd>
         </div>
         <div class="flex justify-between">
-          <dt class="text-field-label uppercase text-grey">Principal</dt>
+          <dt class="text-field-label uppercase text-grey">Contact</dt>
           <dd class="text-navy">{{ investor.principal_contact|default:"—" }}</dd>
         </div>
         <div class="flex justify-between">
@@ -74,7 +74,7 @@
           <dd class="text-navy">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</dd>
         </div>
         <div class="flex justify-between">
-          <dt class="text-field-label uppercase text-grey">Responsibility</dt>
+          <dt class="text-field-label uppercase text-grey">Intermediary</dt>
           <dd class="text-navy">
             {% if investor.responsibility %}
               {% if investor.responsibility.name == "Intermediary" %}

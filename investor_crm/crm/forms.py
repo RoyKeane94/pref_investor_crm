@@ -209,10 +209,16 @@ class MeetingLogForm(TailwindFormMixin, forms.ModelForm):
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
+    investor_participants = forms.MultipleChoiceField(
+        label='Investor participants',
+        choices=[],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     class Meta:
         model = MeetingLog
-        fields = ['date', 'participants', 'notes']
+        fields = ['date', 'participants', 'investor_participants', 'notes']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
@@ -220,24 +226,44 @@ class MeetingLogForm(TailwindFormMixin, forms.ModelForm):
     def __init__(self, *args: Any, investor: Investor, **kwargs: Any) -> None:
         self.investor = investor
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk and self.instance.participants:
-            self.initial['participants'] = self.instance.participants
+        self.fields['investor_participants'].choices = list(
+            _with_choices_for_investor(investor)
+        )
+        if self.instance and self.instance.pk:
+            if self.instance.participants:
+                self.initial['participants'] = self.instance.participants
+            if self.instance.investor_participants:
+                self.initial['investor_participants'] = self.instance.investor_participants
 
     def save(self, commit: bool = True) -> MeetingLog:
         instance: MeetingLog = super().save(commit=False)
         instance.investor = self.investor
         instance.participants = self.cleaned_data.get('participants') or []
+        instance.investor_participants = (
+            self.cleaned_data.get('investor_participants') or []
+        )
         if commit:
             instance.save()
         return instance
 
 
 class CallLogForm(TailwindFormMixin, forms.ModelForm):
-    with_person = forms.ChoiceField(label='With')
+    participants = forms.MultipleChoiceField(
+        label='Prefequity participants',
+        choices=PARTICIPANT_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    investor_participants = forms.MultipleChoiceField(
+        label='Investor participants',
+        choices=[],
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     class Meta:
         model = CallLog
-        fields = ['date', 'with_person', 'notes']
+        fields = ['date', 'participants', 'investor_participants', 'notes']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
@@ -245,22 +271,34 @@ class CallLogForm(TailwindFormMixin, forms.ModelForm):
     def __init__(self, *args: Any, investor: Investor, **kwargs: Any) -> None:
         self.investor = investor
         super().__init__(*args, **kwargs)
-        self.fields['with_person'].choices = _with_choices_for_investor(investor)
+        self.fields['investor_participants'].choices = list(
+            _with_choices_for_investor(investor)
+        )
+        if self.instance and self.instance.pk:
+            if self.instance.participants:
+                self.initial['participants'] = self.instance.participants
+            if self.instance.investor_participants:
+                self.initial['investor_participants'] = (
+                    self.instance.investor_participants
+                )
+            elif self.instance.contact or self.instance.contact_name_override:
+                # Migrate from old single contact
+                if self.instance.contact:
+                    self.initial['investor_participants'] = [
+                        f'contact:{self.instance.contact.pk}'
+                    ]
+                else:
+                    self.initial['investor_participants'] = ['principal']
 
     def save(self, commit: bool = True) -> CallLog:
         instance: CallLog = super().save(commit=False)
         instance.investor = self.investor
-        choice = self.cleaned_data.get('with_person')
+        instance.participants = self.cleaned_data.get('participants') or []
+        instance.investor_participants = (
+            self.cleaned_data.get('investor_participants') or []
+        )
         instance.contact = None
         instance.contact_name_override = ''
-        if choice == 'principal':
-            instance.contact_name_override = self.investor.principal_contact
-        elif choice and choice.startswith('contact:'):
-            contact_id = choice.split(':', 1)[1]
-            try:
-                instance.contact = self.investor.contacts.get(pk=contact_id)
-            except Contact.DoesNotExist:
-                instance.contact = None
         if commit:
             instance.save()
         return instance

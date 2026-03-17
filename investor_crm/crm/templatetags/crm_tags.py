@@ -24,6 +24,14 @@ def _ordinal(n):
 
 
 @register.filter
+def investor_participants_display(log, investor):
+    """Display investor participants for a MeetingLog or CallLog."""
+    if hasattr(log, 'investor_participants_display'):
+        return log.investor_participants_display(investor)
+    return '—'
+
+
+@register.filter
 def date_ordinal(value):
     """Format a date as '7th March 2026'."""
     if value is None:

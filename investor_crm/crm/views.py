@@ -257,8 +257,10 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
     timeline_items = []
     for meeting in meeting_logs:
-        parts = meeting.participants_display()
-        summary = f"Meeting ({parts})" if parts != '—' else "Meeting"
+        pref = meeting.participants_display()
+        inv = meeting.investor_participants_display(investor)
+        parts = [p for p in (pref, inv) if p and p != '—']
+        summary = f"Meeting ({', '.join(parts)})" if parts else "Meeting"
         timeline_items.append(
             {
                 'date': meeting.date,
@@ -491,6 +493,7 @@ def calllog_edit(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
             'form': form,
             'investor': investor,
             'show_form': True,
+            'title': 'Edit Call Log',
             'post_url': reverse('crm:calllog_edit', args=[investor.pk, call.pk]),
             'delete_url': reverse('crm:calllog_delete', args=[investor.pk, call.pk]),
         },

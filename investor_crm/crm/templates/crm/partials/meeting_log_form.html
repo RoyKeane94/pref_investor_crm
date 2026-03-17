@@ -27,7 +27,7 @@
           </label>
           {% if field|is_checkbox_multiple %}
             <div class="flex flex-wrap gap-3 pt-1">
-              {% for choice in field.field.widget.choices %}
+              {% for choice in field.field.choices %}
                 <label class="inline-flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" name="{{ field.name }}" value="{{ choice.0 }}"
                          {% if field.value and choice.0 in field.value %}checked{% endif %}
@@ -90,7 +90,8 @@
     <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
       <tr>
         <th class="py-1.5 px-1">Date</th>
-        <th class="py-1.5 px-1">Participants</th>
+        <th class="py-1.5 px-1">Prefequity</th>
+        <th class="py-1.5 px-1">Investor</th>
         <th class="py-1.5 px-1 text-right"></th>
       </tr>
     </thead>
@@ -102,6 +103,7 @@
           @click="openNote === {{ meeting.pk }} ? openNote = null : openNote = {{ meeting.pk }}">
           <td class="py-1 text-navy">{{ meeting.date|date_ordinal }}</td>
           <td class="py-1">{{ meeting.participants_display }}</td>
+          <td class="py-1">{{ meeting|investor_participants_display:investor }}</td>
           <td class="py-1 text-right">
             <button
               type="button"
@@ -116,19 +118,19 @@
         </tr>
         {% if meeting.notes %}
         <tr x-show="(showAll || {{ forloop.counter }} <= 5) && openNote === {{ meeting.pk }}">
-          <td colspan="3" class="py-2 px-3 bg-grey-card text-grey">
+          <td colspan="4" class="py-2 px-3 bg-grey-card text-grey">
             {{ meeting.notes|linebreaksbr }}
           </td>
         </tr>
         {% endif %}
       {% empty %}
         <tr>
-          <td colspan="3" class="py-2 text-grey">No meetings logged.</td>
+          <td colspan="4" class="py-2 text-grey">No meetings logged.</td>
         </tr>
       {% endfor %}
       {% if meeting_logs|length > 5 %}
         <tr x-show="!showAll" class="border-t border-grey-border">
-          <td colspan="3" class="py-2">
+          <td colspan="4" class="py-2">
             <button type="button" @click="showAll = true"
                     class="text-body-sm text-accent hover:underline font-medium">
               Show all ({{ meeting_logs|length }})

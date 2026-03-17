@@ -166,6 +166,11 @@ class MeetingLog(models.Model):
         blank=True,
         help_text='Prefequity participants (TD, NP, JCP, TB, PW)',
     )
+    investor_participants = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Investor participants: principal, contact:pk',
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -175,6 +180,23 @@ class MeetingLog(models.Model):
     def participants_display(self) -> str:
         """Return comma-separated participant codes."""
         return ', '.join(self.participants) if self.participants else '—'
+
+    def investor_participants_display(self, investor: 'Investor') -> str:
+        """Return comma-separated investor participant names."""
+        names = []
+        for p in self.investor_participants or []:
+            if p == 'principal':
+                if investor.principal_contact:
+                    names.append(investor.principal_contact)
+            elif isinstance(p, str) and p.startswith('contact:'):
+                try:
+                    cid = int(p.split(':', 1)[1])
+                    c = investor.contacts.filter(pk=cid).first()
+                    if c:
+                        names.append(c.name)
+                except (ValueError, IndexError):
+                    pass
+        return ', '.join(names) if names else '—'
 
 
 class CallLog(models.Model):
@@ -186,6 +208,16 @@ class CallLog(models.Model):
         Contact, on_delete=models.SET_NULL, null=True, blank=True
     )
     contact_name_override = models.CharField(max_length=255, blank=True)
+    participants = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Prefequity participants (TD, NP, JCP, TB, PW)',
+    )
+    investor_participants = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Investor participants: principal, contact:pk',
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -194,9 +226,31 @@ class CallLog(models.Model):
 
     @property
     def with_display(self) -> str:
+        if self.investor_participants:
+            return self._investor_participants_display()
         if self.contact:
             return self.contact.name
         return self.contact_name_override or ''
+
+    def _investor_participants_display(self) -> str:
+        names = []
+        for p in self.investor_participants or []:
+            if p == 'principal':
+                if self.investor.principal_contact:
+                    names.append(self.investor.principal_contact)
+            elif isinstance(p, str) and p.startswith('contact:'):
+                try:
+                    cid = int(p.split(':', 1)[1])
+                    c = self.investor.contacts.filter(pk=cid).first()
+                    if c:
+                        names.append(c.name)
+                except (ValueError, IndexError):
+                    pass
+        return ', '.join(names) if names else ''
+
+    def investor_participants_display(self, investor=None) -> str:
+        """Return comma-separated investor participant names (for template filter)."""
+        return self._investor_participants_display()
 
 
 class EmailLog(models.Model):
