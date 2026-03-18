@@ -74,6 +74,8 @@ module.exports = {
           'call-bg': '#ecfdf5',
           email: '#2563eb',
           'email-bg': '#eff6ff',
+          meeting: '#d97706',
+          'meeting-bg': '#fffbeb',
           coinvest: '#7c3aed',
           'coinvest-bg': '#f5f3ff',
         },

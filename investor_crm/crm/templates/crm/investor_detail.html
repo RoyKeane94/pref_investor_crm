@@ -17,10 +17,16 @@
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">Target for Feeder Fund</span>
             {% elif s == 'target_fund_iii' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">Target for Fund III</span>
-            {% elif s == 'confirmed' %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">Revisit</span>
+            {% elif s == 'confirmed_sma' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">Confirmed for SMA</span>
+            {% elif s == 'confirmed_feeder_fund' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">Confirmed for Feeder</span>
+            {% elif s == 'confirmed_fund_iii' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">Confirmed for Fund III</span>
             {% elif s == 'other' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-body-sm">Other</span>
+            {% elif s == 'confirmed' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">Revisit</span>
             {% endif %}
           {% empty %}
             <span class="text-grey">—</span>

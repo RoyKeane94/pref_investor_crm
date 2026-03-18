@@ -29,8 +29,11 @@ class Investor(models.Model):
         ('target_sma', 'Target for SMA'),
         ('target_feeder_fund', 'Target for Feeder Fund'),
         ('target_fund_iii', 'Target for Fund III'),
-        ('confirmed', 'Revisit'),
+        ('confirmed_sma', 'Confirmed for SMA'),
+        ('confirmed_feeder_fund', 'Confirmed for Feeder'),
+        ('confirmed_fund_iii', 'Confirmed for Fund III'),
         ('other', 'Other'),
+        ('confirmed', 'Revisit'),
     ]
 
     TYPE_CHOICES = [

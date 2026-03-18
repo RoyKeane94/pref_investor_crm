@@ -27,12 +27,24 @@
         <div class="text-page-title">{{ stats.target_fund_iii|default:0 }}</div>
       </div>
       <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Revisit</div>
-        <div class="text-page-title">{{ stats.confirmed|default:0 }}</div>
+        <div class="text-field-label uppercase text-grey mb-1">Confirmed for SMA</div>
+        <div class="text-page-title">{{ stats.confirmed_sma|default:0 }}</div>
+      </div>
+      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
+        <div class="text-field-label uppercase text-grey mb-1">Confirmed for Feeder</div>
+        <div class="text-page-title">{{ stats.confirmed_feeder_fund|default:0 }}</div>
+      </div>
+      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
+        <div class="text-field-label uppercase text-grey mb-1">Confirmed for Fund III</div>
+        <div class="text-page-title">{{ stats.confirmed_fund_iii|default:0 }}</div>
       </div>
       <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
         <div class="text-field-label uppercase text-grey mb-1">Other</div>
         <div class="text-page-title">{{ stats.other|default:0 }}</div>
+      </div>
+      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
+        <div class="text-field-label uppercase text-grey mb-1">Revisit</div>
+        <div class="text-page-title">{{ stats.confirmed|default:0 }}</div>
       </div>
     </div>
   </section>
@@ -47,6 +59,10 @@
           value="{{ search }}"
           class="w-full border border-grey-border rounded-card px-3 py-2 text-body-sm"
           placeholder="Search by name, contact, office">
+      </div>
+      <div>
+        <label class="block text-field-label uppercase text-grey mb-1">Type</label>
+        {% include "crm/partials/custom_dropdown_standalone.html" with select_name="type" select_id="id_type_filter" choices=type_choices selected=type_filter %}
       </div>
       <div>
         <label class="block text-field-label uppercase text-grey mb-1">Status</label>

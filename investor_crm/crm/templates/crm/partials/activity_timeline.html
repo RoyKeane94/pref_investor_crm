@@ -13,7 +13,7 @@
           <div class="w-28 text-grey">{{ item.date|date_ordinal }}</div>
           <div>
             {% if item.type == 'meeting' %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-coinvest-bg text-timeline-coinvest text-body-sm">Meeting</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-meeting-bg text-timeline-meeting text-body-sm">Meeting</span>
             {% elif item.type == 'call' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-timeline-call-bg text-timeline-call text-body-sm">Call</span>
             {% elif item.type == 'email' %}

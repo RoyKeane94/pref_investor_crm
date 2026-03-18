@@ -140,6 +140,7 @@ def investor_list(request: HttpRequest) -> HttpResponse:
     investors = _annotated_investors()
 
     search = request.GET.get('q', '').strip()
+    type_filter = request.GET.get('type') or ''
     status = request.GET.get('status') or ''
     responsibility_id = request.GET.get('responsibility') or ''
     sort = request.GET.get('sort') or 'name'
@@ -152,6 +153,8 @@ def investor_list(request: HttpRequest) -> HttpResponse:
             | Q(principal_contact__icontains=search)
             | Q(office__name__icontains=search)
         )
+    if type_filter:
+        investors = investors.filter(type=type_filter)
     if status:
         investors = investors.filter(statuses__contains=[status])
     if responsibility_id:
@@ -165,6 +168,10 @@ def investor_list(request: HttpRequest) -> HttpResponse:
     elif sort == 'principal':
         investors = investors.order_by(
             f'{prefix}principal_contact', 'name' if sort_dir == 'asc' else '-name'
+        )
+    elif sort == 'type':
+        investors = investors.order_by(
+            f'{prefix}type', 'name' if sort_dir == 'asc' else '-name'
         )
     elif sort == 'status':
         investors = investors.order_by(
@@ -188,18 +195,24 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         target_sma=Count('id', filter=Q(statuses__contains=['target_sma'])),
         target_feeder_fund=Count('id', filter=Q(statuses__contains=['target_feeder_fund'])),
         target_fund_iii=Count('id', filter=Q(statuses__contains=['target_fund_iii'])),
-        confirmed=Count('id', filter=Q(statuses__contains=['confirmed'])),
+        confirmed_sma=Count('id', filter=Q(statuses__contains=['confirmed_sma'])),
+        confirmed_feeder_fund=Count('id', filter=Q(statuses__contains=['confirmed_feeder_fund'])),
+        confirmed_fund_iii=Count('id', filter=Q(statuses__contains=['confirmed_fund_iii'])),
         other=Count('id', filter=Q(statuses__contains=['other'])),
+        confirmed=Count('id', filter=Q(statuses__contains=['confirmed'])),
     )
 
     responsibilities = Responsibility.objects.all()
     reminders = _reminder_qs()
     responsibility_choices = [('', 'All')] + [(r.id, r.name) for r in responsibilities]
+    type_choices = [('', 'All')] + list(Investor.TYPE_CHOICES)
     status_choices = [('', 'All')] + list(Investor.STATUS_CHOICES)
 
     filter_params = {}
     if search:
         filter_params['q'] = search
+    if type_filter:
+        filter_params['type'] = type_filter
     if status:
         filter_params['status'] = status
     if responsibility_id:
@@ -210,9 +223,11 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         'investors': investors,
         'stats': stats,
         'responsibilities': responsibilities,
+        'type_choices': type_choices,
         'status_choices': status_choices,
         'responsibility_choices': responsibility_choices,
         'search': search,
+        'type_filter': type_filter,
         'status_filter': status,
         'responsibility_filter': responsibility_id,
         'sort': sort,
