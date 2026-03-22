@@ -13,6 +13,10 @@ module.exports = {
           DEFAULT: '#0f1a2e',
           light: '#1a2744',
         },
+        /** Dark forest green — dashboard Confirmed stats (distinct from status-confirmed-text badges) */
+        forest: {
+          DEFAULT: '#14532d',
+        },
         grey: {
           DEFAULT: '#5a6578',
           dark: '#7a8494',

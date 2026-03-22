@@ -1,0 +1,76 @@
+{% extends "crm/base.html" %}
+
+{% block title %}Import investors · Investor CRM{% endblock %}
+
+{% block main_class %}max-w-3xl{% endblock %}
+{% block header_class %}max-w-3xl{% endblock %}
+
+{% block content %}
+  <div class="mb-6">
+    <a href="{% url 'crm:investor_list' %}" class="text-body-sm text-accent hover:underline">← Back to investors</a>
+  </div>
+
+  <h1 class="text-page-title text-navy mb-2">Import from Excel</h1>
+  <p class="text-body-sm text-grey mb-6">
+    Upload an <strong>.xlsx</strong> file. The first row must be column headers. Each <strong>Investor</strong>
+    name is processed once per file (case-insensitive): later duplicate rows for the same name are skipped.
+    Existing database records are updated; new names are created. Large files (~1,500+ rows) are supported
+    with batched lookups.
+  </p>
+
+  <div class="border border-grey-border rounded-card p-6 bg-grey-card/40 mb-8">
+    <h2 class="text-heading text-navy mb-3">Expected columns</h2>
+    <ul class="text-body-sm text-grey space-y-1 list-disc list-inside">
+      <li><strong>Investor</strong> — name (required)</li>
+      <li><strong>Type</strong> — e.g. Asset manager, Bank (must match app types)</li>
+      <li><strong>Contact</strong> or <strong>Principal contact(s)</strong> — principal contact</li>
+      <li><strong>Website</strong> — URL (https added if missing)</li>
+      <li><strong>Status</strong> — one or more labels separated by commas (e.g. Target for SMA, Revisit)</li>
+      <li><strong>Ticket size (£m)</strong> — number</li>
+      <li><strong>Meeting / Zoom</strong> — Yes/No</li>
+      <li><strong>VDR</strong> — Yes/No</li>
+      <li><strong>Office</strong> — office name (created if new)</li>
+      <li><strong>Prefequity resp.</strong> — TD, NP, JCP, TB, or PW (sets responsibility to Prefequity)</li>
+      <li><strong>Intermediary</strong> — intermediary name (sets responsibility to Intermediary; overrides Prefequity if both filled)</li>
+      <li><strong>Comment</strong> — maps to <strong>About</strong></li>
+    </ul>
+  </div>
+
+  {% if messages %}
+    <ul class="mb-6 space-y-2">
+      {% for message in messages %}
+        <li class="text-body-sm {% if message.tags == 'error' %}text-danger{% else %}text-navy{% endif %}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4 text-body-sm">
+    {% csrf_token %}
+    <div>
+      <label class="block text-field-label uppercase text-grey mb-1">Excel file (.xlsx)</label>
+      <input type="file" name="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+             class="w-full border border-grey-border rounded-card px-3 py-2 text-body-sm bg-white text-navy">
+    </div>
+    <button type="submit" class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+      Upload and import
+    </button>
+  </form>
+
+  {% if result and result.skipped_duplicates %}
+    <p class="text-body-sm text-grey mb-4">
+      Skipped <strong>{{ result.skipped_duplicates }}</strong> duplicate row(s) in the spreadsheet
+      (same investor name as an earlier row).
+    </p>
+  {% endif %}
+
+  {% if result and result.errors %}
+    <div class="mt-8 border border-grey-border rounded-card p-4 bg-white">
+      <h3 class="text-heading text-navy mb-2">Row errors (first {{ result.errors|length }})</h3>
+      <ul class="text-body-sm text-danger space-y-1">
+        {% for err in result.errors %}
+          <li>Row {{ err.row }}: {{ err.message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+{% endblock %}

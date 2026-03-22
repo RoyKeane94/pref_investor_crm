@@ -27,7 +27,7 @@ class Office(models.Model):
 class Investor(models.Model):
     STATUS_CHOICES = [
         ('target_sma', 'Target for SMA'),
-        ('target_feeder_fund', 'Target for Feeder Fund'),
+        ('target_feeder_fund', 'Target for Feeder'),
         ('target_fund_iii', 'Target for Fund III'),
         ('confirmed_sma', 'Confirmed for SMA'),
         ('confirmed_feeder_fund', 'Confirmed for Feeder'),

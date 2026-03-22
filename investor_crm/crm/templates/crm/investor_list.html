@@ -1,4 +1,5 @@
 {% extends "crm/base.html" %}
+{% load humanize %}
 
 {% block title %}Investors · Investor CRM{% endblock %}
 
@@ -8,50 +9,72 @@
 {% block content %}
   {% include "crm/partials/reminders_banner.html" with reminders=reminders %}
 
-  <section class="mb-4">
-    <div class="flex flex-row gap-4 text-body-sm">
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Total</div>
-        <div class="text-page-title">{{ stats.total|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Target for SMA</div>
-        <div class="text-page-title">{{ stats.target_sma|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Target for Feeder Fund</div>
-        <div class="text-page-title">{{ stats.target_feeder_fund|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Target for Fund III</div>
-        <div class="text-page-title">{{ stats.target_fund_iii|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Confirmed for SMA</div>
-        <div class="text-page-title">{{ stats.confirmed_sma|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Confirmed for Feeder</div>
-        <div class="text-page-title">{{ stats.confirmed_feeder_fund|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Confirmed for Fund III</div>
-        <div class="text-page-title">{{ stats.confirmed_fund_iii|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Other</div>
-        <div class="text-page-title">{{ stats.other|default:0 }}</div>
-      </div>
-      <div class="flex-1 min-w-0 basis-0 bg-grey-card rounded-card border border-grey-border px-4 py-3">
-        <div class="text-field-label uppercase text-grey mb-1">Revisit</div>
-        <div class="text-page-title">{{ stats.confirmed|default:0 }}</div>
+  <section class="mb-4 text-body-sm">
+    <div class="rounded-card border border-grey-border bg-white overflow-hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-grey-border">
+        {# Target — SMA / Fund III / Feeder #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
+          <div class="text-field-label uppercase tracking-wide text-navy w-full text-center">Target</div>
+          <div class="h-px bg-grey-border my-3 shrink-0" aria-hidden="true"></div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center flex-1 items-end">
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">SMA</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_sma %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_sma|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Fund III</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_fund_iii %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_fund_iii|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Feeder</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_feeder_fund %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_feeder_fund|default:0 }}</div>
+            </div>
+          </div>
+        </div>
+        {# Confirmed — SMA / Fund III / Feeder #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
+          <div class="text-field-label uppercase tracking-wide text-forest w-full text-center">Confirmed</div>
+          <div class="h-px bg-grey-border my-3 shrink-0" aria-hidden="true"></div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center flex-1 items-end">
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">SMA</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.confirmed_sma %}text-forest{% else %}text-forest/35{% endif %}">{{ stats.confirmed_sma|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Fund III</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.confirmed_fund_iii %}text-forest{% else %}text-forest/35{% endif %}">{{ stats.confirmed_fund_iii|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Feeder</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.confirmed_feeder_fund %}text-forest{% else %}text-forest/35{% endif %}">{{ stats.confirmed_feeder_fund|default:0 }}</div>
+            </div>
+          </div>
+        </div>
+        {# Other #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center justify-between text-center min-h-[8.5rem]">
+          <div class="text-field-label uppercase tracking-wide text-grey w-full text-center">Other</div>
+          <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
+          <div class="flex-1 flex items-center justify-center w-full">
+            <span class="text-page-title tabular-nums leading-none {% if stats.other %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.other|default:0|intcomma }}</span>
+          </div>
+        </div>
+        {# Revisit #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center justify-between text-center min-h-[8.5rem]">
+          <div class="text-field-label uppercase tracking-wide text-grey w-full text-center">Revisit</div>
+          <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
+          <div class="flex-1 flex items-center justify-center w-full">
+            <span class="text-page-title tabular-nums leading-none {% if stats.confirmed %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.confirmed|default:0|intcomma }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="mb-4">
-    <form method="get" class="flex items-end space-x-3 text-body-sm">
-      <div class="flex-1">
+    <form method="get" class="flex flex-wrap items-start gap-x-3 gap-y-2 text-body-sm">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+      <div class="flex-1 min-w-[12rem]">
         <label class="block text-field-label uppercase text-grey mb-1">Search</label>
         <input
           type="text"
@@ -72,7 +95,7 @@
         <label class="block text-field-label uppercase text-grey mb-1">Intermediary</label>
         {% include "crm/partials/custom_dropdown_standalone.html" with select_name="responsibility" select_id="id_responsibility_filter" choices=responsibility_choices selected=responsibility_filter %}
       </div>
-      <div class="pb-2">
+      <div class="pt-6">
         <button
           type="submit"
           class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
@@ -84,4 +107,3 @@
 
   {% include "crm/partials/investor_table.html" with investors=investors %}
 {% endblock %}
-

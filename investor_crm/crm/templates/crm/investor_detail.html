@@ -14,7 +14,7 @@
             {% if s == 'target_sma' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-body-sm">Target for SMA</span>
             {% elif s == 'target_feeder_fund' %}
-              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">Target for Feeder Fund</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">Target for Feeder</span>
             {% elif s == 'target_fund_iii' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">Target for Fund III</span>
             {% elif s == 'confirmed_sma' %}
@@ -101,8 +101,8 @@
         <div class="flex justify-between">
           <dt class="text-field-label uppercase text-grey">Last Contacted</dt>
           <dd>
-            {% if investor.last_contacted %}
-              <span class="text-navy">{{ investor.last_contacted|date_ordinal }}</span>
+            {% if investor.latest_contact_date %}
+              <span class="text-navy">{{ investor.latest_contact_date|date_ordinal }}</span>
             {% else %}
               —
             {% endif %}

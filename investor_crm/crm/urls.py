@@ -6,6 +6,7 @@ app_name = 'crm'
 
 urlpatterns = [
     path('', views.investor_list, name='investor_list'),
+    path('investors/import/', views.investor_import, name='investor_import'),
     path('investors/<int:pk>/', views.investor_detail, name='investor_detail'),
     path('investors/create/', views.investor_create, name='investor_create'),
     path('investors/<int:pk>/edit/', views.investor_edit, name='investor_edit'),

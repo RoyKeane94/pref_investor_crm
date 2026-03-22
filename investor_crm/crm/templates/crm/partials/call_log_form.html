@@ -103,7 +103,7 @@
           @click="openNote === {{ call.pk }} ? openNote = null : openNote = {{ call.pk }}">
           <td class="py-1 text-navy">{{ call.date|date_ordinal }}</td>
           <td class="py-1">{% if call.participants %}{{ call.participants|join:", " }}{% else %}—{% endif %}</td>
-          <td class="py-1">{{ call.with_display|default:"—" }}</td>
+          <td class="py-1">{{ call.inv_with_display|default:"—" }}</td>
           <td class="py-1 text-right">
             <button
               type="button"

@@ -28,7 +28,8 @@ if (env_file := BASE_DIR / '.env').exists():
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# Local dev: set DEBUG=1 in .env so /static/ is served without collectstatic.
+DEBUG = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split() or []
 
@@ -51,6 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'crm',
 ]
 

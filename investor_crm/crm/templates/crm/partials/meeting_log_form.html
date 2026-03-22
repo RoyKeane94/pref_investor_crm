@@ -103,7 +103,7 @@
           @click="openNote === {{ meeting.pk }} ? openNote = null : openNote = {{ meeting.pk }}">
           <td class="py-1 text-navy">{{ meeting.date|date_ordinal }}</td>
           <td class="py-1">{{ meeting.participants_display }}</td>
-          <td class="py-1">{{ meeting|investor_participants_display:investor }}</td>
+          <td class="py-1">{{ meeting.inv_participants_label|default:"—" }}</td>
           <td class="py-1 text-right">
             <button
               type="button"
