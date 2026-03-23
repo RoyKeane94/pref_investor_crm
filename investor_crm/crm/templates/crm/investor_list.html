@@ -12,25 +12,6 @@
   <section class="mb-4 text-body-sm">
     <div class="rounded-card border border-grey-border bg-white overflow-hidden">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-grey-border">
-        {# Target — SMA / Fund III / Feeder #}
-        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
-          <div class="text-field-label uppercase tracking-wide text-navy w-full text-center">Target</div>
-          <div class="h-px bg-grey-border my-3 shrink-0" aria-hidden="true"></div>
-          <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center flex-1 items-end">
-            <div class="flex flex-col gap-1">
-              <div class="text-table-header uppercase text-grey">SMA</div>
-              <div class="text-page-title tabular-nums leading-none {% if stats.target_sma %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_sma|default:0 }}</div>
-            </div>
-            <div class="flex flex-col gap-1">
-              <div class="text-table-header uppercase text-grey">Fund III</div>
-              <div class="text-page-title tabular-nums leading-none {% if stats.target_fund_iii %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_fund_iii|default:0 }}</div>
-            </div>
-            <div class="flex flex-col gap-1">
-              <div class="text-table-header uppercase text-grey">Feeder</div>
-              <div class="text-page-title tabular-nums leading-none {% if stats.target_feeder_fund %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_feeder_fund|default:0 }}</div>
-            </div>
-          </div>
-        </div>
         {# Confirmed — SMA / Fund III / Feeder #}
         <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
           <div class="text-field-label uppercase tracking-wide text-forest w-full text-center">Confirmed</div>
@@ -50,19 +31,38 @@
             </div>
           </div>
         </div>
-        {# Other #}
-        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center justify-between text-center min-h-[8.5rem]">
+        {# Target — SMA / Fund III / Feeder #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
+          <div class="text-field-label uppercase tracking-wide text-navy w-full text-center">Target</div>
+          <div class="h-px bg-grey-border my-3 shrink-0" aria-hidden="true"></div>
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 text-center flex-1 items-end">
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">SMA</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_sma %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_sma|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Fund III</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_fund_iii %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_fund_iii|default:0 }}</div>
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="text-table-header uppercase text-grey">Feeder</div>
+              <div class="text-page-title tabular-nums leading-none {% if stats.target_feeder_fund %}text-navy{% else %}text-navy/35{% endif %}">{{ stats.target_feeder_fund|default:0 }}</div>
+            </div>
+          </div>
+        </div>
+        {# Other — number bottom-aligned with Target/Confirmed figures #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem] text-center">
           <div class="text-field-label uppercase tracking-wide text-grey w-full text-center">Other</div>
           <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
-          <div class="flex-1 flex items-center justify-center w-full">
+          <div class="flex-1 flex items-end justify-center w-full min-h-0">
             <span class="text-page-title tabular-nums leading-none {% if stats.other %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.other|default:0|intcomma }}</span>
           </div>
         </div>
         {# Revisit #}
-        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col items-center justify-between text-center min-h-[8.5rem]">
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem] text-center">
           <div class="text-field-label uppercase tracking-wide text-grey w-full text-center">Revisit</div>
           <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
-          <div class="flex-1 flex items-center justify-center w-full">
+          <div class="flex-1 flex items-end justify-center w-full min-h-0">
             <span class="text-page-title tabular-nums leading-none {% if stats.confirmed %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.confirmed|default:0|intcomma }}</span>
           </div>
         </div>
