@@ -147,6 +147,11 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
         if self.instance and self.instance.pk and self.instance.statuses:
             self.initial['statuses'] = self.instance.statuses
 
+        # Keep the Office dropdown options in alphabetical order.
+        # (Office model itself doesn't define a default ordering.)
+        if 'office' in self.fields:
+            self.fields['office'].queryset = Office.objects.all().order_by('name')
+
     def clean(self):
         cleaned = super().clean()
         responsibility = cleaned.get('responsibility')
