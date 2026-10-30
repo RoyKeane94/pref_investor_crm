@@ -87,6 +87,39 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'investor_crm.wsgi.application'
+ASGI_APPLICATION = 'investor_crm.asgi.application'
+
+# Public URL of the MCP Streamable HTTP endpoint (no trailing slash required;
+# used for token resource metadata / AuthSettings).
+_default_mcp_url = (
+    CSRF_TRUSTED_ORIGINS[0].rstrip('/') + '/mcp'
+    if CSRF_TRUSTED_ORIGINS
+    else 'http://127.0.0.1:8000/mcp'
+)
+MCP_PUBLIC_URL = os.environ.get('MCP_PUBLIC_URL', _default_mcp_url).rstrip('/')
+
+# Host / Origin allowlists for MCP DNS-rebinding protection.
+MCP_ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '127.0.0.1:*',
+    'localhost:*',
+]
+for _host in ALLOWED_HOSTS:
+    _host = (_host or '').strip()
+    if not _host or _host == '*':
+        continue
+    MCP_ALLOWED_HOSTS.append(_host)
+    MCP_ALLOWED_HOSTS.append(f'{_host}:*')
+
+MCP_ALLOWED_ORIGINS = list(CSRF_TRUSTED_ORIGINS) + [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+_extra_mcp_origins = os.environ.get('MCP_ALLOWED_ORIGINS', '')
+MCP_ALLOWED_ORIGINS.extend(
+    o.strip() for o in _extra_mcp_origins.split(',') if o.strip()
+)
 
 
 # Database

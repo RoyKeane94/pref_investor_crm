@@ -19,7 +19,7 @@ from django.urls import reverse
 
 from django.contrib.auth import login, logout
 
-from .permissions import can_edit_agent_note, write_required
+from .permissions import can_edit_agent_note, is_agent_user, write_required
 
 from .forms import (
     AgentNoteForm,
@@ -39,6 +39,7 @@ from .forms import (
 )
 from .excel_import import import_workbook
 from .models import (
+    AgentApiToken,
     AgentNote,
     CallLog,
     CoInvestment,
@@ -1276,15 +1277,29 @@ def _agent_rows_by_investor(
     return rows
 
 
-def _agents_page_context(form: AgentNoteForm, investor_id: str = '') -> dict:
+def _agents_page_context(
+    request: HttpRequest,
+    form: AgentNoteForm,
+    investor_id: str = '',
+) -> dict:
     rows = _agent_rows_by_investor(AgentNote.objects.all(), investor_id)
-    return {
+    ctx: dict = {
         'form': form,
         'investor_rows': rows,
         'filter_investor': investor_id,
         'investors': Investor.objects.order_by('name'),
         'note_types': AgentNote.NOTE_TYPE_CHOICES,
+        'mcp_public_url': settings.MCP_PUBLIC_URL.rstrip('/') + '/',
+        'show_mcp_tokens': is_agent_user(request.user),
+        'mcp_tokens': [],
+        'mcp_new_token': None,
     }
+    if ctx['show_mcp_tokens']:
+        ctx['mcp_tokens'] = list(
+            AgentApiToken.objects.filter(user=request.user).order_by('-created_at')
+        )
+        ctx['mcp_new_token'] = request.session.pop('mcp_new_token', None)
+    return ctx
 
 
 @login_required
@@ -1294,8 +1309,39 @@ def agents_page(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         'crm/agents.html',
-        _agents_page_context(AgentNoteForm(), investor_id),
+        _agents_page_context(request, AgentNoteForm(), investor_id),
     )
+
+
+@login_required
+def agent_mcp_token_create(request: HttpRequest) -> HttpResponse:
+    if request.method != 'POST':
+        return redirect('crm:agents')
+    if not is_agent_user(request.user):
+        return HttpResponseForbidden('Only agent accounts can create MCP tokens.')
+    name = (request.POST.get('name') or 'Claude').strip() or 'Claude'
+    _token, raw_key = AgentApiToken.create_token(request.user, name=name)
+    request.session['mcp_new_token'] = raw_key
+    messages.success(
+        request,
+        'MCP token created. Copy it now — it will not be shown again.',
+    )
+    return redirect('crm:agents')
+
+
+@login_required
+def agent_mcp_token_revoke(request: HttpRequest, pk: int) -> HttpResponse:
+    if request.method != 'POST':
+        return redirect('crm:agents')
+    if not is_agent_user(request.user):
+        return HttpResponseForbidden('Only agent accounts can revoke MCP tokens.')
+    token = get_object_or_404(AgentApiToken, pk=pk, user=request.user)
+    if token.is_active:
+        token.revoke()
+        messages.success(request, f'Token {token.prefix}… revoked.')
+    else:
+        messages.info(request, 'That token was already revoked.')
+    return redirect('crm:agents')
 
 
 @login_required
@@ -1312,7 +1358,7 @@ def agent_note_create(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         'crm/agents.html',
-        _agents_page_context(form),
+        _agents_page_context(request, form),
         status=400,
     )
 

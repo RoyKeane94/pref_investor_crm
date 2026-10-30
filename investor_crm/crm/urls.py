@@ -149,4 +149,14 @@ urlpatterns = [
         views.agent_note_delete,
         name='agent_note_delete',
     ),
+    path(
+        'agents/mcp-token/create/',
+        views.agent_mcp_token_create,
+        name='agent_mcp_token_create',
+    ),
+    path(
+        'agents/mcp-token/<int:pk>/revoke/',
+        views.agent_mcp_token_revoke,
+        name='agent_mcp_token_revoke',
+    ),
 ]

@@ -93,6 +93,12 @@
           {% if is_agent %}
             <span class="inline-flex items-center px-2 py-0.5 rounded-badge border border-grey-border text-table-header uppercase text-grey">Agent</span>
           {% endif %}
+          {% if is_agent or can_write %}
+            <a href="{% url 'crm:agents' %}"
+               class="px-3 py-1.5 rounded-badge border border-grey-border text-navy text-body-sm hover:bg-grey-hover">
+              Agents
+            </a>
+          {% endif %}
           <span class="h-4 w-px bg-grey-border" aria-hidden="true"></span>
           <form method="post" action="{% url 'logout' %}" class="inline">
             {% csrf_token %}

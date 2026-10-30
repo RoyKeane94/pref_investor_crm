@@ -539,6 +539,8 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             'person_name',
             'moved_from',
             'moved_to',
+            'event_date',
+            'confidence',
         ]
         labels = {
             'note_type': 'Type',
@@ -548,10 +550,13 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             'person_name': 'Person',
             'moved_from': 'From',
             'moved_to': 'To',
+            'event_date': 'Event date',
+            'confidence': 'Confidence',
         }
         widgets = {
             'body': forms.Textarea(attrs={'rows': 3}),
             'link': forms.URLInput(attrs={'placeholder': 'https://…'}),
+            'event_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -565,6 +570,8 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             'person_name',
             'moved_from',
             'moved_to',
+            'event_date',
+            'confidence',
         ):
             self.fields[name].required = False
         self.fields['moved_from'].widget.attrs['placeholder'] = (

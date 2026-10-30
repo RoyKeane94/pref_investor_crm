@@ -22,6 +22,102 @@
   </ul>
   {% endif %}
 
+  {% if show_mcp_tokens %}
+  <section class="border border-grey-border rounded-card bg-white p-4 md:p-5 space-y-4">
+    <div>
+      <h2 class="text-heading text-navy">Claude / MCP access</h2>
+      <p class="text-body-sm text-grey mt-1">
+        Create a bearer token while logged in as this agent account. Use it in Claude as
+        <span class="text-navy">Authorization: Bearer &lt;token&gt;</span> against the MCP URL below.
+        Tokens only work for agent (Read Only) accounts.
+      </p>
+    </div>
+
+    <div class="text-body-sm">
+      <div class="text-field-label uppercase text-grey mb-1">MCP URL</div>
+      <code class="block break-all rounded-card border border-grey-border bg-grey-card px-3 py-2 text-navy">{{ mcp_public_url }}</code>
+    </div>
+
+    {% if mcp_new_token %}
+    <div class="rounded-card border border-accent/40 bg-grey-card px-3 py-3 space-y-2" x-data="{ copied: false }">
+      <p class="text-body-sm text-navy font-medium">New token (copy now — shown once)</p>
+      <code
+        id="mcp-new-token"
+        class="block break-all rounded-card border border-grey-border bg-white px-3 py-2 text-navy text-body-sm">{{ mcp_new_token }}</code>
+      <button
+        type="button"
+        class="px-3 py-1.5 rounded-badge border border-grey-border text-navy text-body-sm hover:bg-grey-hover bg-white"
+        @click="navigator.clipboard.writeText(document.getElementById('mcp-new-token').textContent); copied = true">
+        <span x-text="copied ? 'Copied' : 'Copy token'"></span>
+      </button>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'crm:agent_mcp_token_create' %}" class="flex flex-wrap items-end gap-3 text-body-sm">
+      {% csrf_token %}
+      <div>
+        <label class="block text-field-label uppercase text-grey mb-1" for="mcp-token-name">Label</label>
+        <input
+          id="mcp-token-name"
+          type="text"
+          name="name"
+          value="Claude"
+          class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy focus:outline-none focus:ring-1 focus:ring-accent"
+          maxlength="100">
+      </div>
+      <button type="submit" class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+        Create MCP token
+      </button>
+    </form>
+
+    {% if mcp_tokens %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-body-sm text-left">
+        <thead>
+          <tr class="text-table-header uppercase text-grey border-b border-grey-border">
+            <th class="py-2 pr-3 font-medium">Label</th>
+            <th class="py-2 pr-3 font-medium">Prefix</th>
+            <th class="py-2 pr-3 font-medium">Status</th>
+            <th class="py-2 pr-3 font-medium">Created</th>
+            <th class="py-2 pr-3 font-medium">Last used</th>
+            <th class="py-2 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for token in mcp_tokens %}
+          <tr class="border-b border-grey-border/60">
+            <td class="py-2 pr-3 text-navy">{{ token.name }}</td>
+            <td class="py-2 pr-3 text-navy font-mono">{{ token.prefix }}…</td>
+            <td class="py-2 pr-3">
+              {% if token.is_active %}
+                <span class="text-navy">Active</span>
+              {% else %}
+                <span class="text-grey">Revoked</span>
+              {% endif %}
+            </td>
+            <td class="py-2 pr-3 text-grey">{{ token.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="py-2 pr-3 text-grey">{% if token.last_used_at %}{{ token.last_used_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+            <td class="py-2 text-right">
+              {% if token.is_active %}
+              <form method="post" action="{% url 'crm:agent_mcp_token_revoke' token.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1 rounded-badge border border-grey-border text-grey text-body-sm hover:bg-grey-hover bg-transparent">
+                  Revoke
+                </button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-body-sm text-grey">No tokens yet. Create one to connect Claude.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
   <section class="border border-grey-border rounded-card bg-white p-4 md:p-5">
     <h2 class="text-heading text-navy mb-4">Add finding</h2>
     <form

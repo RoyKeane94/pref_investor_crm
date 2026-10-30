@@ -1,6 +1,10 @@
+import hashlib
+import secrets
 from datetime import date
 
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class Responsibility(models.Model):
@@ -362,6 +366,11 @@ class AgentNote(models.Model):
         ('person_change', 'Personnel change'),
         ('investment', 'Investment'),
     ]
+    CONFIDENCE_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
 
     investor = models.ForeignKey(
         Investor, on_delete=models.CASCADE, related_name='agent_notes'
@@ -396,6 +405,18 @@ class AgentNote(models.Model):
     moved_to = models.CharField(
         max_length=255, blank=True, help_text='New role / organisation'
     )
+    event_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text='Date of the news / change / investment, if known',
+    )
+    confidence = models.CharField(
+        max_length=10,
+        choices=CONFIDENCE_CHOICES,
+        blank=True,
+        default='',
+        help_text='How confident the agent is in this finding',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -413,3 +434,54 @@ class AgentNote(models.Model):
             to = (self.moved_to or '').strip() or '—'
             return f'{name}: {frm} → {to}'
         return (self.title or '').strip() or (self.body or '').strip() or '—'
+
+
+class AgentApiToken(models.Model):
+    """Bearer token for agent MCP access. Store only a hash; show the raw key once."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='agent_api_tokens',
+    )
+    name = models.CharField(max_length=100, default='MCP')
+    prefix = models.CharField(max_length=16, db_index=True)
+    key_hash = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        status = 'revoked' if self.revoked_at else 'active'
+        return f'{self.name} ({self.prefix}…) · {self.user} · {status}'
+
+    @property
+    def is_active(self) -> bool:
+        return self.revoked_at is None
+
+    @staticmethod
+    def hash_key(raw_key: str) -> str:
+        return hashlib.sha256(raw_key.encode('utf-8')).hexdigest()
+
+    @classmethod
+    def create_token(cls, user, name: str = 'MCP') -> tuple['AgentApiToken', str]:
+        raw_key = 'agt_' + secrets.token_urlsafe(32)
+        token = cls.objects.create(
+            user=user,
+            name=name,
+            prefix=raw_key[:12],
+            key_hash=cls.hash_key(raw_key),
+        )
+        return token, raw_key
+
+    def revoke(self) -> None:
+        if self.revoked_at is None:
+            self.revoked_at = timezone.now()
+            self.save(update_fields=['revoked_at'])
+
+    def mark_used(self) -> None:
+        self.last_used_at = timezone.now()
+        self.save(update_fields=['last_used_at'])

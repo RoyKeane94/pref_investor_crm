@@ -1,6 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import (
+    AgentApiToken,
     AgentNote,
     CallLog,
     CoInvestment,
@@ -15,6 +16,7 @@ from .models import (
     Reminder,
     Responsibility,
 )
+from .permissions import is_agent_user
 
 
 @admin.register(Responsibility)
@@ -106,9 +108,11 @@ class AgentNoteAdmin(admin.ModelAdmin):
         'title',
         'author',
         'person_name',
+        'event_date',
+        'confidence',
         'created_at',
     )
-    list_filter = ('note_type', 'created_at')
+    list_filter = ('note_type', 'confidence', 'created_at')
     search_fields = (
         'investor__name',
         'title',
@@ -120,3 +124,98 @@ class AgentNoteAdmin(admin.ModelAdmin):
         'author__email',
     )
     raw_id_fields = ('investor', 'author')
+
+
+@admin.register(AgentApiToken)
+class AgentApiTokenAdmin(admin.ModelAdmin):
+    list_display = (
+        'name',
+        'user',
+        'prefix',
+        'is_active',
+        'created_at',
+        'last_used_at',
+        'revoked_at',
+    )
+    list_filter = ('revoked_at', 'created_at')
+    search_fields = ('name', 'prefix', 'user__email', 'user__username')
+    raw_id_fields = ('user',)
+    readonly_fields = (
+        'prefix',
+        'key_hash',
+        'created_at',
+        'last_used_at',
+        'revoked_at',
+    )
+    actions = ('revoke_tokens',)
+
+    @admin.display(boolean=True, description='Active')
+    def is_active(self, obj: AgentApiToken) -> bool:
+        return obj.is_active
+
+    @admin.action(description='Revoke selected tokens')
+    def revoke_tokens(self, request, queryset):
+        count = 0
+        for token in queryset.filter(revoked_at__isnull=True):
+            token.revoke()
+            count += 1
+        self.message_user(
+            request,
+            f'Revoked {count} token(s).',
+            messages.SUCCESS if count else messages.WARNING,
+        )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return ('user', 'name')
+        return (
+            'user',
+            'name',
+            'prefix',
+            'key_hash',
+            'created_at',
+            'last_used_at',
+            'revoked_at',
+        )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is None:
+            return ()
+        return self.readonly_fields + ('user', 'name')
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            super().save_model(request, obj, form, change)
+            return
+
+        user = form.cleaned_data['user']
+        name = form.cleaned_data.get('name') or 'MCP'
+        if not is_agent_user(user):
+            self.message_user(
+                request,
+                (
+                    f'{user} is not in the Read Only (agent) group. '
+                    'Token was still created, but MCP will reject it until they are.'
+                ),
+                messages.WARNING,
+            )
+        token, raw_key = AgentApiToken.create_token(user, name=name)
+        obj.pk = token.pk
+        obj.user = token.user
+        obj.name = token.name
+        obj.prefix = token.prefix
+        obj.key_hash = token.key_hash
+        obj.created_at = token.created_at
+        obj.last_used_at = token.last_used_at
+        obj.revoked_at = token.revoked_at
+        self.message_user(
+            request,
+            (
+                f'Token created for {user}. Copy it now — it will not be shown again: '
+                f'{raw_key}'
+            ),
+            messages.SUCCESS,
+        )
