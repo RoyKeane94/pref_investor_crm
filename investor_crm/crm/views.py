@@ -16,6 +16,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from django.contrib.auth import login, logout
 
@@ -34,10 +35,8 @@ from .forms import (
     LoginForm,
     MeetingLogForm,
     OtherCommitmentForm,
-    RegisterForm,
     ReminderForm,
 )
-from .excel_import import import_workbook
 from .models import (
     AgentApiToken,
     AgentNote,
@@ -248,19 +247,6 @@ def _investor_participant_labels(
     return ', '.join(names) if names else '—'
 
 
-def register(request: HttpRequest) -> HttpResponse:
-    if request.user.is_authenticated:
-        return redirect('/')
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('login')
-    else:
-        form = RegisterForm()
-    return render(request, 'crm/accounts/register.html', {'form': form})
-
-
 def login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect('/')
@@ -272,7 +258,13 @@ def login_view(request: HttpRequest) -> HttpResponse:
             user = User.objects.filter(email=email).first()
             if user and user.check_password(password):
                 login(request, user)
-                next_url = request.GET.get('next', '/')
+                next_url = request.GET.get('next') or settings.LOGIN_REDIRECT_URL
+                if not url_has_allowed_host_and_scheme(
+                    url=next_url,
+                    allowed_hosts={request.get_host()},
+                    require_https=request.is_secure(),
+                ):
+                    next_url = settings.LOGIN_REDIRECT_URL
                 return redirect(next_url)
             form.add_error(None, 'Invalid email or password.')
     else:
@@ -417,37 +409,6 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         'reminders': reminders,
     }
     return render(request, 'crm/investor_list.html', context)
-
-
-@login_required
-@write_required
-def investor_import(request: HttpRequest) -> HttpResponse:
-    """Upload .xlsx to create/update investors from spreadsheet columns."""
-    result = None
-    if request.method == 'POST':
-        f = request.FILES.get('file')
-        if not f:
-            messages.error(request, 'Please choose an Excel file (.xlsx).')
-        elif not f.name.lower().endswith('.xlsx'):
-            messages.error(request, 'Please upload an .xlsx file (Excel).')
-        else:
-            try:
-                result = import_workbook(f)
-                skipped = result.get('skipped_duplicates', 0)
-                skip_msg = f', {skipped} duplicate row(s) skipped in file' if skipped else ''
-                messages.success(
-                    request,
-                    f'Import finished: {result["created"]} created, '
-                    f'{result["updated"]} updated, '
-                    f'{result["rows_failed"]} row(s) failed{skip_msg}.',
-                )
-            except Exception as exc:
-                messages.error(request, f'Could not read file: {exc}')
-    return render(
-        request,
-        'crm/investor_import.html',
-        {'result': result},
-    )
 
 
 @login_required

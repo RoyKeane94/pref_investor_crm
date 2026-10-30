@@ -31,7 +31,6 @@ urlpatterns = [
         ),
     ),
     path('admin/', admin.site.urls),
-    path('accounts/register/', crm_views.register, name='register'),
     path('accounts/login/', crm_views.login_view, name='login'),
     path('accounts/logout/', crm_views.logout_view, name='logout'),
     path('', include('crm.urls', namespace='crm')),

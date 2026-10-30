@@ -2,8 +2,6 @@ from collections import OrderedDict
 from typing import Any, Iterable, Tuple
 
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 
 from .models import (
     AgentNote,
@@ -59,38 +57,6 @@ class TailwindFormMixin:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._apply_tailwind_styles()
-
-
-class RegisterForm(TailwindFormMixin, UserCreationForm):
-    """Registration with email and password only. Username is set to email internally."""
-
-    class Meta:
-        model = User
-        fields = ['email', 'password1', 'password2']
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.fields['email'].required = True
-        self.fields['password1'].help_text = None
-        self.fields['password2'].help_text = None
-
-    def clean_email(self) -> str:
-        email = self.cleaned_data.get('email', '').lower()
-        if User.objects.filter(email=email).exists():
-            raise forms.ValidationError('An account with this email already exists.')
-        return email
-
-    def save(self, commit: bool = True) -> User:
-        from .permissions import assign_read_only
-
-        email = self.cleaned_data['email'].lower()
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=self.cleaned_data['password1'],
-        )
-        assign_read_only(user)
-        return user
 
 
 class LoginForm(TailwindFormMixin, forms.Form):

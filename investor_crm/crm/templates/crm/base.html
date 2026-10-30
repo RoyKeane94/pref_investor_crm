@@ -108,11 +108,6 @@
             </button>
           </form>
           {% if can_write %}
-          <a
-            href="{% url 'crm:investor_import' %}"
-            class="px-4 py-2 rounded-badge border border-grey-border text-navy text-body-sm hover:bg-grey-hover">
-            Import Excel
-          </a>
           <button
             class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm"
             hx-get="{% url 'crm:investor_create' %}"
@@ -125,10 +120,6 @@
           <a href="{% url 'login' %}"
              class="px-3 py-1.5 rounded-badge border border-grey-border text-grey text-body-sm hover:bg-grey-hover">
             Login
-          </a>
-          <a href="{% url 'register' %}"
-             class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
-            Register
           </a>
         {% endif %}
       </div>
