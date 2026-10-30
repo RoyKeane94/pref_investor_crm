@@ -883,6 +883,7 @@ def emaillog_edit(request: HttpRequest, pk: int, email_pk: int) -> HttpResponse:
             'form': form,
             'investor': investor,
             'show_form': True,
+            'title': 'Edit Email Log',
             'post_url': reverse('crm:emaillog_edit', args=[investor.pk, email.pk]),
             'delete_url': reverse('crm:emaillog_delete', args=[investor.pk, email.pk]),
         },

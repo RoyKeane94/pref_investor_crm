@@ -322,7 +322,7 @@ class CallLogForm(TailwindFormMixin, forms.ModelForm):
 
 
 class EmailLogForm(TailwindFormMixin, forms.ModelForm):
-    with_person = forms.ChoiceField(label='With')
+    with_person = forms.ChoiceField(label='To/From')
 
     class Meta:
         model = EmailLog
@@ -334,22 +334,54 @@ class EmailLogForm(TailwindFormMixin, forms.ModelForm):
     def __init__(self, *args: Any, investor: Investor, **kwargs: Any) -> None:
         self.investor = investor
         super().__init__(*args, **kwargs)
-        self.fields['with_person'].choices = _with_choices_for_investor(investor)
+        self.fields['with_person'].choices = [
+            ('', 'Select...'),
+            *_with_choices_for_investor(investor),
+        ]
+        if self.instance and self.instance.pk:
+            if self.instance.contact_id:
+                self.initial['with_person'] = f'contact:{self.instance.contact_id}'
+            elif self.instance.contact_name_override:
+                override = self.instance.contact_name_override
+                if override == self.investor.principal_contact:
+                    self.initial['with_person'] = 'principal'
+                else:
+                    # Contact may have been deleted; keep the submitted name selectable.
+                    orphan_value = f'name:{override}'
+                    self.fields['with_person'].choices = [
+                        ('', 'Select...'),
+                        (orphan_value, override),
+                        *_with_choices_for_investor(investor),
+                    ]
+                    self.initial['with_person'] = orphan_value
+            else:
+                self.initial['with_person'] = ''
 
     def save(self, commit: bool = True) -> EmailLog:
         instance: EmailLog = super().save(commit=False)
         instance.investor = self.investor
-        choice = self.cleaned_data.get('with_person')
+        choice = self.cleaned_data.get('with_person') or ''
         instance.contact = None
-        instance.contact_name_override = ''
+        # Always denormalize the name so To/From survives contact deletion.
+        choice_labels = dict(self.fields['with_person'].choices)
+        display_name = (choice_labels.get(choice) or '').strip()
         if choice == 'principal':
-            instance.contact_name_override = self.investor.principal_contact
-        elif choice and choice.startswith('contact:'):
+            instance.contact_name_override = (
+                (self.investor.principal_contact or '').strip() or display_name
+            )
+        elif choice.startswith('contact:'):
             contact_id = choice.split(':', 1)[1]
             try:
                 instance.contact = self.investor.contacts.get(pk=contact_id)
-            except Contact.DoesNotExist:
+            except (Contact.DoesNotExist, ValueError):
                 instance.contact = None
+            instance.contact_name_override = (
+                instance.contact.name if instance.contact else display_name
+            )
+        elif choice.startswith('name:'):
+            instance.contact_name_override = choice.split(':', 1)[1].strip() or display_name
+        else:
+            instance.contact_name_override = display_name
         if commit:
             instance.save()
         return instance
