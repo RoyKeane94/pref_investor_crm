@@ -60,7 +60,7 @@ def build_mcp_http_app():
     name='search_investors',
     description=(
         'Search investors by name or principal-contact text, with optional '
-        'status and type filters. Returns a paged list. '
+        'status and type filters. Returns a paged list (page_size up to 500). '
         'investor_type must be one of: asset_manager, bank, endowment_charity, '
         'fund_manager, fund_of_funds, gatekeeper_consultant, hnw_uhnw, '
         'insurance_company, investment_company_trust, pension_fund_company, '
@@ -110,7 +110,8 @@ async def get_investor(investor_id: int) -> dict:
         'List agent findings (AgentNotes). Filters: investor_id, source_url '
         'substring, type (news|person_change|investment|flag|fit_flag|checked|'
         'note), date_from/date_to = source event_date, logged_from/logged_to = '
-        'when the entry was logged (created_at, YYYY-MM-DD). Paged.'
+        'when the entry was logged (created_at, YYYY-MM-DD). '
+        'Paged; page_size up to 500.'
     ),
 )
 async def list_findings(
@@ -183,7 +184,8 @@ async def add_finding(
     name='update_finding',
     description=(
         'Update a finding the authenticated agent created. Omit fields you '
-        'do not want to change. Pass empty strings to clear optional text fields.'
+        'do not want to change. Pass empty strings to clear optional text fields. '
+        'To clear event_date: pass "", null, "null", "clear", or clear_event_date=true.'
     ),
 )
 async def update_finding(
@@ -192,7 +194,8 @@ async def update_finding(
     headline: str | None = None,
     source_url: str | None = None,
     detail: str | None = None,
-    event_date: str | None = None,
+    event_date: str | None = tool_impl.EVENT_DATE_OMIT,
+    clear_event_date: bool = False,
     confidence: str | None = None,
     person: str | None = None,
     moved_from: str | None = None,
@@ -206,10 +209,45 @@ async def update_finding(
         source_url=source_url,
         detail=detail,
         event_date=event_date,
+        clear_event_date=clear_event_date,
         confidence=confidence,
         person=person,
         moved_from=moved_from,
         moved_to=moved_to,
+    )
+
+
+@mcp.tool(
+    name='bulk_add_findings',
+    description=(
+        'Create up to 100 findings in one call. Pass findings as a list of objects, '
+        'each with the same fields as add_finding (investor_id, type, and optional '
+        'headline, detail, source_url, event_date, confidence, person, moved_from, '
+        'moved_to). Returns created[] and errors[] (per-index). Prefer this over '
+        'many add_finding calls.'
+    ),
+)
+async def bulk_add_findings(findings: list[dict]) -> dict:
+    return await sync_to_async(tool_impl.bulk_add_findings, thread_sensitive=True)(
+        _current_user_id(),
+        findings,
+    )
+
+
+@mcp.tool(
+    name='bulk_update_findings',
+    description=(
+        'Update up to 100 findings in one call. Pass updates as a list of objects, '
+        'each with finding_id (or id) plus fields to change (same as update_finding). '
+        'To clear event_date on an item: set event_date to "", null, "null", or '
+        'clear_event_date=true. Returns updated[] and errors[]. Prefer this over '
+        'many update_finding calls.'
+    ),
+)
+async def bulk_update_findings(updates: list[dict]) -> dict:
+    return await sync_to_async(tool_impl.bulk_update_findings, thread_sensitive=True)(
+        _current_user_id(),
+        updates,
     )
 
 

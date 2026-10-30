@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Case, Count, DateField, F, IntegerField, OuterRef, Prefetch, Q, Subquery, Value, When
+from django.db.models import Case, Count, DateField, F, IntegerField, Max, OuterRef, Prefetch, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce, Greatest, Least, NullIf
 from django.http import (
     HttpRequest,
@@ -56,6 +56,7 @@ from django.contrib.auth.models import User
 
 
 INVESTORS_PER_PAGE = 100
+AGENT_FINDINGS_PER_PAGE = 25
 
 
 def _annotated_investors():
@@ -1201,88 +1202,146 @@ def reminder_delete(
     return response
 
 
-def _agent_rows_by_investor(
-    notes_qs,
-    investor_id: str = '',
-):
-    """Group notes into investor rows for the agents table."""
-    qs = notes_qs.select_related('investor', 'author').order_by(
-        'investor__name', '-created_at'
-    )
-    if investor_id.isdigit():
-        qs = qs.filter(investor_id=int(investor_id))
+def _empty_agent_row(investor: Investor) -> dict:
+    return {
+        'investor': investor,
+        'news': [],
+        'person_changes': [],
+        'investments': [],
+        'flags': [],
+        'fit_flags': [],
+        'checked': [],
+        'general_notes': [],
+        'latest_at': getattr(investor, 'latest_finding_at', None),
+        'notes': [],
+    }
 
-    rows: list[dict] = []
-    current = None
-    for note in qs[:500]:
-        if current is None or current['investor'].pk != note.investor_id:
-            current = {
-                'investor': note.investor,
-                'news': [],
-                'person_changes': [],
-                'investments': [],
-                'flags': [],
-                'fit_flags': [],
-                'checked': [],
-                'general_notes': [],
-                'latest_at': note.created_at,
-                'notes': [],
-            }
-            rows.append(current)
-        current['notes'].append(note)
-        if note.created_at and note.created_at > current['latest_at']:
-            current['latest_at'] = note.created_at
+
+def _rows_for_investors(investors: list[Investor]) -> list[dict]:
+    """Build table rows for a page of investors (newest notes first per type)."""
+    if not investors:
+        return []
+    by_id = {inv.pk: _empty_agent_row(inv) for inv in investors}
+    notes = (
+        AgentNote.objects.filter(investor_id__in=by_id.keys())
+        .select_related('investor', 'author')
+        .order_by('-created_at')
+    )
+    for note in notes:
+        row = by_id[note.investor_id]
+        row['notes'].append(note)
+        if note.created_at and (
+            row['latest_at'] is None or note.created_at > row['latest_at']
+        ):
+            row['latest_at'] = note.created_at
         if note.note_type == 'news':
-            current['news'].append(note)
+            row['news'].append(note)
         elif note.note_type == 'person_change':
-            current['person_changes'].append(note)
+            row['person_changes'].append(note)
         elif note.note_type == 'investment':
-            current['investments'].append(note)
+            row['investments'].append(note)
         elif note.note_type == 'flag':
-            current['flags'].append(note)
+            row['flags'].append(note)
         elif note.note_type == 'fit_flag':
-            current['fit_flags'].append(note)
+            row['fit_flags'].append(note)
         elif note.note_type == 'checked':
-            current['checked'].append(note)
+            row['checked'].append(note)
         elif note.note_type == 'note':
-            current['general_notes'].append(note)
-    rows.sort(key=lambda r: r['latest_at'], reverse=True)
-    return rows
+            row['general_notes'].append(note)
+    return [by_id[inv.pk] for inv in investors]
 
 
 def _agents_page_context(
     request: HttpRequest,
-    form: AgentNoteForm,
-    investor_id: str = '',
+    form: AgentNoteForm | None = None,
 ) -> dict:
-    rows = _agent_rows_by_investor(AgentNote.objects.all(), investor_id)
+    search = (request.GET.get('q') or '').strip()
+    investor_id = (request.GET.get('investor') or '').strip()
+    note_type = (request.GET.get('type') or '').strip()
+    sort = (request.GET.get('sort') or 'updated').strip()
+    sort_dir = (request.GET.get('sort_dir') or 'desc').strip().lower()
+    if sort not in ('name', 'updated'):
+        sort = 'updated'
+    if sort_dir not in ('asc', 'desc'):
+        sort_dir = 'desc'
+
+    investors_qs = (
+        Investor.objects.filter(agent_notes__isnull=False)
+        .annotate(latest_finding_at=Max('agent_notes__created_at'))
+        .distinct()
+    )
+    if search:
+        investors_qs = investors_qs.filter(name__icontains=search)
+    if investor_id.isdigit():
+        investors_qs = investors_qs.filter(pk=int(investor_id))
+    if note_type and note_type in {c[0] for c in AgentNote.NOTE_TYPE_CHOICES}:
+        investors_qs = investors_qs.filter(agent_notes__note_type=note_type)
+
+    if sort == 'name':
+        order = 'name' if sort_dir == 'asc' else '-name'
+    else:
+        order = (
+            'latest_finding_at' if sort_dir == 'asc' else '-latest_finding_at'
+        )
+    investors_qs = investors_qs.order_by(order, 'name')
+
+    paginator = Paginator(investors_qs, AGENT_FINDINGS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    rows = _rows_for_investors(list(page_obj.object_list))
+
+    filter_params: dict[str, str] = {}
+    if search:
+        filter_params['q'] = search
+    if investor_id:
+        filter_params['investor'] = investor_id
+    if note_type:
+        filter_params['type'] = note_type
+    if sort != 'updated':
+        filter_params['sort'] = sort
+    if not (sort == 'updated' and sort_dir == 'desc'):
+        filter_params['sort_dir'] = sort_dir
+    list_query_string = urlencode(filter_params)
+
+    is_agent = is_agent_user(request.user)
     ctx: dict = {
-        'form': form,
+        'form': form if is_agent else None,
+        'show_add_finding': is_agent,
         'investor_rows': rows,
+        'page_obj': page_obj,
+        'search': search,
         'filter_investor': investor_id,
-        'investors': Investor.objects.order_by('name'),
-        'note_types': AgentNote.NOTE_TYPE_CHOICES,
+        'filter_type': note_type,
+        'sort': sort,
+        'sort_dir': sort_dir,
+        'list_query_string': list_query_string,
+        'investors': Investor.objects.filter(agent_notes__isnull=False)
+        .distinct()
+        .order_by('name'),
+        'note_types': [
+            c for c in AgentNote.NOTE_TYPE_CHOICES if c[0] != 'checked'
+        ],
         'mcp_public_url': settings.MCP_PUBLIC_URL.rstrip('/') + '/',
-        'show_mcp_tokens': is_agent_user(request.user),
+        'show_mcp_tokens': is_agent,
         'mcp_tokens': [],
         'mcp_new_token': None,
     }
-    if ctx['show_mcp_tokens']:
+    if is_agent:
         ctx['mcp_tokens'] = list(
             AgentApiToken.objects.filter(user=request.user).order_by('-created_at')
         )
         ctx['mcp_new_token'] = request.session.pop('mcp_new_token', None)
+        if ctx['form'] is None:
+            ctx['form'] = AgentNoteForm()
     return ctx
 
 
 @login_required
 def agents_page(request: HttpRequest) -> HttpResponse:
     """Agent findings board: agents can write here; team reviews."""
-    investor_id = request.GET.get('investor') or ''
     return render(
         request,
         'crm/agents.html',
-        _agents_page_context(request, AgentNoteForm(), investor_id),
+        _agents_page_context(request),
     )
 
 
@@ -1321,6 +1380,8 @@ def agent_mcp_token_revoke(request: HttpRequest, pk: int) -> HttpResponse:
 def agent_note_create(request: HttpRequest) -> HttpResponse:
     if request.method != 'POST':
         return redirect('crm:agents')
+    if not is_agent_user(request.user):
+        return HttpResponseForbidden('Only agent accounts can add findings.')
     form = AgentNoteForm(request.POST)
     if form.is_valid():
         note = form.save(commit=False)

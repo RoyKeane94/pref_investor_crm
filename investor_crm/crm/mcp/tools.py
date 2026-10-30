@@ -26,6 +26,19 @@ VALID_INVESTOR_TYPES = {c[0] for c in Investor.TYPE_CHOICES}
 VALID_STATUSES = {c[0] for c in Investor.STATUS_CHOICES}
 INVESTOR_TYPE_VALUES = [c[0] for c in Investor.TYPE_CHOICES]
 STATUS_VALUES = [c[0] for c in Investor.STATUS_CHOICES]
+MAX_PAGE_SIZE = 500
+MAX_BULK_FINDINGS = 100
+# Agents often send null/blank/"null" when clearing optional dates.
+_CLEAR_DATE_TOKENS = frozenset({
+    '',
+    'null',
+    'none',
+    'nil',
+    'clear',
+    '-',
+    'n/a',
+    'na',
+})
 
 
 def _filter_error(field: str, value: str) -> dict[str, Any]:
@@ -64,8 +77,17 @@ def _require_agent(user_id: int | None) -> User:
     return user
 
 
-def _parse_optional_date(value: str | None, field_name: str) -> date | None:
-    if value is None or str(value).strip() == '':
+def _is_clear_date_value(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str) and value.strip().lower() in _CLEAR_DATE_TOKENS:
+        return True
+    return False
+
+
+def _parse_optional_date(value: Any, field_name: str) -> date | None:
+    """Parse YYYY-MM-DD, or return None to clear. Accepts '', null, 'null', 'clear', etc."""
+    if _is_clear_date_value(value):
         return None
     text = str(value).strip()
     parsed = parse_date(text)
@@ -74,8 +96,14 @@ def _parse_optional_date(value: str | None, field_name: str) -> date | None:
         if dt is not None:
             parsed = dt.date()
     if parsed is None:
-        raise ValueError(f'Invalid {field_name}: use YYYY-MM-DD.')
+        raise ValueError(
+            f'Invalid {field_name}: use YYYY-MM-DD, or empty/null/clear to clear.'
+        )
     return parsed
+
+
+def _clamp_page_size(page_size: int | None, default: int = 25) -> int:
+    return min(MAX_PAGE_SIZE, max(1, int(page_size or default)))
 
 
 def _validate_finding_fields(
@@ -150,7 +178,7 @@ def search_investors(
             qs = qs.filter(type=investor_type)
 
         page = max(1, int(page or 1))
-        page_size = min(100, max(1, int(page_size or 25)))
+        page_size = _clamp_page_size(page_size)
         paginator = Paginator(qs.order_by('name'), page_size)
         page_obj = paginator.get_page(page)
         return {
@@ -158,6 +186,7 @@ def search_investors(
             'page_size': page_size,
             'total': paginator.count,
             'total_pages': paginator.num_pages,
+            'max_page_size': MAX_PAGE_SIZE,
             'results': [serialize_investor_summary(inv) for inv in page_obj.object_list],
         }
     finally:
@@ -240,7 +269,7 @@ def list_findings(
             qs = qs.filter(created_at__date__lte=log_to)
 
         page = max(1, int(page or 1))
-        page_size = min(100, max(1, int(page_size or 25)))
+        page_size = _clamp_page_size(page_size)
         paginator = Paginator(qs.order_by('-created_at'), page_size)
         page_obj = paginator.get_page(page)
         return {
@@ -248,10 +277,123 @@ def list_findings(
             'page_size': page_size,
             'total': paginator.count,
             'total_pages': paginator.num_pages,
+            'max_page_size': MAX_PAGE_SIZE,
             'results': [serialize_finding(n) for n in page_obj.object_list],
         }
     finally:
         _close()
+
+
+def _validation_error_message(exc: ValidationError) -> str:
+    return '; '.join(
+        f'{k}: {", ".join(v)}' for k, v in exc.message_dict.items()
+    )
+
+
+def _create_finding_for_user(user: User, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        investor_id = int(payload['investor_id'])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError('investor_id is required and must be an integer.') from exc
+    note_type = str(payload.get('type') or '').strip()
+    headline = str(payload.get('headline') or '').strip()
+    detail = str(payload.get('detail') or '').strip()
+    source_url = str(payload.get('source_url') or '').strip()
+    person = str(payload.get('person') or '').strip()
+    confidence = str(payload.get('confidence') or '').strip()
+    moved_from = str(payload.get('moved_from') or '').strip()
+    moved_to = str(payload.get('moved_to') or '').strip()
+    _validate_finding_fields(
+        note_type=note_type,
+        headline=headline,
+        detail=detail,
+        source_url=source_url,
+        person=person,
+        confidence=confidence,
+    )
+    if not Investor.objects.filter(pk=investor_id).exists():
+        raise ValueError(f'Investor {investor_id} not found.')
+    parsed_event = _parse_optional_date(payload.get('event_date', ''), 'event_date')
+    if note_type == 'checked' and not headline and not detail:
+        headline = 'Checked'
+    note = AgentNote(
+        investor_id=investor_id,
+        author=user,
+        note_type=note_type,
+        title=headline,
+        body=detail,
+        link=source_url,
+        person_name=person,
+        moved_from=moved_from,
+        moved_to=moved_to,
+        event_date=parsed_event,
+        confidence=confidence,
+    )
+    try:
+        note.full_clean()
+    except ValidationError as exc:
+        raise ValueError(_validation_error_message(exc)) from exc
+    note.save()
+    note = AgentNote.objects.select_related('investor', 'author').get(pk=note.pk)
+    return serialize_finding(note)
+
+
+def _apply_finding_update(
+    user: User,
+    finding_id: int,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    note = (
+        AgentNote.objects.select_related('investor', 'author')
+        .filter(pk=finding_id)
+        .first()
+    )
+    if note is None:
+        raise ValueError(f'Finding {finding_id} not found.')
+    if not can_edit_agent_note(user, note):
+        raise PermissionError('You can only update findings you created.')
+
+    if 'type' in payload and payload['type'] is not None:
+        note.note_type = str(payload['type']).strip()
+    if 'headline' in payload and payload['headline'] is not None:
+        note.title = str(payload['headline']).strip()
+    if 'detail' in payload and payload['detail'] is not None:
+        note.body = str(payload['detail']).strip()
+    if 'source_url' in payload and payload['source_url'] is not None:
+        note.link = str(payload['source_url']).strip()
+    if 'person' in payload and payload['person'] is not None:
+        note.person_name = str(payload['person']).strip()
+    if 'moved_from' in payload and payload['moved_from'] is not None:
+        note.moved_from = str(payload['moved_from']).strip()
+    if 'moved_to' in payload and payload['moved_to'] is not None:
+        note.moved_to = str(payload['moved_to']).strip()
+    if 'confidence' in payload and payload['confidence'] is not None:
+        note.confidence = str(payload['confidence']).strip()
+
+    clear_event_date = bool(payload.get('clear_event_date'))
+    if clear_event_date or 'event_date' in payload:
+        raw_date = payload.get('event_date', '')
+        # Explicit clear flag, or any clear-token / blank / null value.
+        if clear_event_date or _is_clear_date_value(raw_date):
+            note.event_date = None
+        else:
+            note.event_date = _parse_optional_date(raw_date, 'event_date')
+
+    _validate_finding_fields(
+        note_type=note.note_type,
+        headline=note.title or '',
+        detail=note.body or '',
+        source_url=note.link or '',
+        person=note.person_name or '',
+        confidence=note.confidence or '',
+    )
+    try:
+        note.full_clean()
+    except ValidationError as exc:
+        raise ValueError(_validation_error_message(exc)) from exc
+    note.save()
+    note = AgentNote.objects.select_related('investor', 'author').get(pk=note.pk)
+    return serialize_finding(note)
 
 
 def add_finding(
@@ -271,51 +413,27 @@ def add_finding(
     _close()
     try:
         user = _require_agent(user_id)
-        note_type = (type or '').strip()
-        headline = (headline or '').strip()
-        detail = (detail or '').strip()
-        source_url = (source_url or '').strip()
-        person = (person or '').strip()
-        confidence = (confidence or '').strip()
-        moved_from = (moved_from or '').strip()
-        moved_to = (moved_to or '').strip()
-        _validate_finding_fields(
-            note_type=note_type,
-            headline=headline,
-            detail=detail,
-            source_url=source_url,
-            person=person,
-            confidence=confidence,
+        return _create_finding_for_user(
+            user,
+            {
+                'investor_id': investor_id,
+                'type': type,
+                'headline': headline,
+                'source_url': source_url,
+                'detail': detail,
+                'event_date': event_date,
+                'confidence': confidence,
+                'person': person,
+                'moved_from': moved_from,
+                'moved_to': moved_to,
+            },
         )
-        if not Investor.objects.filter(pk=investor_id).exists():
-            raise ValueError(f'Investor {investor_id} not found.')
-        parsed_event = _parse_optional_date(event_date or None, 'event_date')
-        if note_type == 'checked' and not headline and not detail:
-            headline = 'Checked'
-        note = AgentNote(
-            investor_id=investor_id,
-            author=user,
-            note_type=note_type,
-            title=headline,
-            body=detail,
-            link=source_url,
-            person_name=person,
-            moved_from=moved_from,
-            moved_to=moved_to,
-            event_date=parsed_event,
-            confidence=confidence,
-        )
-        try:
-            note.full_clean()
-        except ValidationError as exc:
-            raise ValueError('; '.join(
-                f'{k}: {", ".join(v)}' for k, v in exc.message_dict.items()
-            )) from exc
-        note.save()
-        note = AgentNote.objects.select_related('investor', 'author').get(pk=note.pk)
-        return serialize_finding(note)
     finally:
         _close()
+
+
+# Sentinel: omit event_date on update (MCP null/blank must still be able to clear).
+EVENT_DATE_OMIT = '__omit__'
 
 
 def update_finding(
@@ -326,7 +444,8 @@ def update_finding(
     headline: str | None = None,
     source_url: str | None = None,
     detail: str | None = None,
-    event_date: str | None = None,
+    event_date: Any = EVENT_DATE_OMIT,
+    clear_event_date: bool = False,
     confidence: str | None = None,
     person: str | None = None,
     moved_from: str | None = None,
@@ -335,54 +454,116 @@ def update_finding(
     _close()
     try:
         user = _require_agent(user_id)
-        note = (
-            AgentNote.objects.select_related('investor', 'author')
-            .filter(pk=finding_id)
-            .first()
-        )
-        if note is None:
-            raise ValueError(f'Finding {finding_id} not found.')
-        if not can_edit_agent_note(user, note):
-            raise PermissionError(
-                'You can only update findings you created.'
-            )
-
+        payload: dict[str, Any] = {}
         if type is not None:
-            note.note_type = type.strip()
+            payload['type'] = type
         if headline is not None:
-            note.title = headline.strip()
-        if detail is not None:
-            note.body = detail.strip()
+            payload['headline'] = headline
         if source_url is not None:
-            note.link = source_url.strip()
-        if person is not None:
-            note.person_name = person.strip()
-        if moved_from is not None:
-            note.moved_from = moved_from.strip()
-        if moved_to is not None:
-            note.moved_to = moved_to.strip()
+            payload['source_url'] = source_url
+        if detail is not None:
+            payload['detail'] = detail
         if confidence is not None:
-            note.confidence = confidence.strip()
-        if event_date is not None:
-            note.event_date = _parse_optional_date(event_date or None, 'event_date')
+            payload['confidence'] = confidence
+        if person is not None:
+            payload['person'] = person
+        if moved_from is not None:
+            payload['moved_from'] = moved_from
+        if moved_to is not None:
+            payload['moved_to'] = moved_to
+        # Omitted → leave unchanged. null / "" / "null" / clear_event_date → clear.
+        if clear_event_date or event_date is not EVENT_DATE_OMIT:
+            payload['event_date'] = event_date
+            payload['clear_event_date'] = clear_event_date
+        return _apply_finding_update(user, finding_id, payload)
+    finally:
+        _close()
 
-        _validate_finding_fields(
-            note_type=note.note_type,
-            headline=note.title or '',
-            detail=note.body or '',
-            source_url=note.link or '',
-            person=note.person_name or '',
-            confidence=note.confidence or '',
-        )
-        try:
-            note.full_clean()
-        except ValidationError as exc:
-            raise ValueError('; '.join(
-                f'{k}: {", ".join(v)}' for k, v in exc.message_dict.items()
-            )) from exc
-        note.save()
-        note = AgentNote.objects.select_related('investor', 'author').get(pk=note.pk)
-        return serialize_finding(note)
+
+def bulk_add_findings(
+    user_id: int | None,
+    findings: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Create many findings in one call. Each item matches add_finding fields."""
+    _close()
+    try:
+        user = _require_agent(user_id)
+        if not isinstance(findings, list):
+            raise ValueError('findings must be a list of objects.')
+        if len(findings) > MAX_BULK_FINDINGS:
+            raise ValueError(
+                f'At most {MAX_BULK_FINDINGS} findings per bulk_add_findings call.'
+            )
+        created: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        for index, item in enumerate(findings):
+            if not isinstance(item, dict):
+                errors.append({'index': index, 'error': 'Item must be an object.'})
+                continue
+            try:
+                created.append(_create_finding_for_user(user, item))
+            except (ValueError, PermissionError) as exc:
+                errors.append({'index': index, 'error': str(exc), 'input': item})
+        return {
+            'created_count': len(created),
+            'error_count': len(errors),
+            'created': created,
+            'errors': errors,
+        }
+    finally:
+        _close()
+
+
+def bulk_update_findings(
+    user_id: int | None,
+    updates: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Update many findings in one call. Each item needs finding_id plus fields to change."""
+    _close()
+    try:
+        user = _require_agent(user_id)
+        if not isinstance(updates, list):
+            raise ValueError('updates must be a list of objects.')
+        if len(updates) > MAX_BULK_FINDINGS:
+            raise ValueError(
+                f'At most {MAX_BULK_FINDINGS} updates per bulk_update_findings call.'
+            )
+        updated: list[dict[str, Any]] = []
+        errors: list[dict[str, Any]] = []
+        for index, item in enumerate(updates):
+            if not isinstance(item, dict):
+                errors.append({'index': index, 'error': 'Item must be an object.'})
+                continue
+            raw_id = item.get('finding_id', item.get('id'))
+            try:
+                finding_id = int(raw_id)
+            except (TypeError, ValueError):
+                errors.append(
+                    {
+                        'index': index,
+                        'error': 'finding_id is required and must be an integer.',
+                        'input': item,
+                    }
+                )
+                continue
+            payload = {k: v for k, v in item.items() if k not in ('finding_id', 'id')}
+            try:
+                updated.append(_apply_finding_update(user, finding_id, payload))
+            except (ValueError, PermissionError) as exc:
+                errors.append(
+                    {
+                        'index': index,
+                        'finding_id': finding_id,
+                        'error': str(exc),
+                        'input': item,
+                    }
+                )
+        return {
+            'updated_count': len(updated),
+            'error_count': len(errors),
+            'updated': updated,
+            'errors': errors,
+        }
     finally:
         _close()
 

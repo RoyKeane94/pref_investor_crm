@@ -8,7 +8,11 @@
   <div>
     <h1 class="text-page-title text-navy">Agent findings</h1>
     <p class="text-body-sm text-grey mt-1">
-      Findings are linked to CRM investors and reviewed in the table below — news, personnel, investments, notes, and flags (look into / fit). Include the source/event date when known.
+      {% if show_add_finding %}
+        Log findings below — news, personnel, investments, notes, and flags (look into / fit). Include the source/event date when known.
+      {% else %}
+        Review agent findings by investor. Search, filter, and sort the table; open an investor for the full CRM record.
+      {% endif %}
     </p>
   </div>
 
@@ -131,6 +135,7 @@
   </section>
   {% endif %}
 
+  {% if show_add_finding and form %}
   <section class="border border-grey-border rounded-card bg-white p-4 md:p-5">
     <h2 class="text-heading text-navy mb-4">Add finding</h2>
     <form
@@ -238,20 +243,60 @@
       </div>
     </form>
   </section>
+  {% endif %}
 
   <section class="space-y-3">
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div class="flex flex-col gap-3">
       <h2 class="text-heading text-navy">By investor</h2>
-      <form method="get" action="{% url 'crm:agents' %}" class="flex flex-wrap gap-2 text-body-sm">
-        <select name="investor" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
-          <option value="">All investors with findings</option>
-          {% for inv in investors %}
-            <option value="{{ inv.pk }}" {% if filter_investor == inv.pk|stringformat:"s" %}selected{% endif %}>{{ inv.name }}</option>
-          {% endfor %}
-        </select>
+      <form method="get" action="{% url 'crm:agents' %}" class="flex flex-wrap items-end gap-2 text-body-sm">
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1" for="agents-search">Search investor</label>
+          <input
+            id="agents-search"
+            type="search"
+            name="q"
+            value="{{ search }}"
+            placeholder="Investor name…"
+            class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy min-w-[12rem] focus:outline-none focus:ring-1 focus:ring-accent">
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1" for="agents-investor">Investor</label>
+          <select id="agents-investor" name="investor" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
+            <option value="">All with findings</option>
+            {% for inv in investors %}
+              <option value="{{ inv.pk }}" {% if filter_investor == inv.pk|stringformat:"s" %}selected{% endif %}>{{ inv.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1" for="agents-type">Type</label>
+          <select id="agents-type" name="type" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
+            <option value="">Any type</option>
+            {% for value, label in note_types %}
+              <option value="{{ value }}" {% if filter_type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1" for="agents-sort">Sort</label>
+          <select id="agents-sort" name="sort" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
+            <option value="updated" {% if sort == 'updated' %}selected{% endif %}>Last updated</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>Investor name</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1" for="agents-sort-dir">Order</label>
+          <select id="agents-sort-dir" name="sort_dir" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
+            <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>Descending</option>
+            <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>Ascending</option>
+          </select>
+        </div>
         <button type="submit" class="px-3 py-2 rounded-badge border border-grey-border text-navy hover:bg-grey-hover">
-          Filter
+          Apply
         </button>
+        {% if search or filter_investor or filter_type or sort != 'updated' or sort_dir != 'desc' %}
+          <a href="{% url 'crm:agents' %}" class="px-3 py-2 rounded-badge text-grey hover:text-navy">Clear</a>
+        {% endif %}
       </form>
     </div>
 
@@ -413,12 +458,46 @@
           {% empty %}
             <tr>
               <td colspan="7" class="px-4 py-6 text-center text-grey">
-                No findings yet. Add findings above.
+                {% if search or filter_investor or filter_type %}
+                  No investors match these filters.
+                {% elif show_add_finding %}
+                  No findings yet. Add findings above.
+                {% else %}
+                  No agent findings yet.
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+      {% if page_obj.paginator.num_pages > 1 %}
+        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-grey-border bg-grey-card/40 text-body-sm">
+          <span class="text-grey">
+            Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+          </span>
+          <div class="flex items-center gap-3">
+            {% if page_obj.has_previous %}
+              {% if page_obj.previous_page_number == 1 %}
+                <a href="{% url 'crm:agents' %}{% if list_query_string %}?{{ list_query_string }}{% endif %}" class="text-accent hover:underline font-medium">Previous</a>
+              {% else %}
+                <a href="{% url 'crm:agents' %}?{% if list_query_string %}{{ list_query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="text-accent hover:underline font-medium">Previous</a>
+              {% endif %}
+            {% else %}
+              <span class="text-grey-dark cursor-not-allowed">Previous</span>
+            {% endif %}
+            <span class="text-grey-dark">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+              <a href="{% url 'crm:agents' %}?{% if list_query_string %}{{ list_query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="text-accent hover:underline font-medium">Next</a>
+            {% else %}
+              <span class="text-grey-dark cursor-not-allowed">Next</span>
+            {% endif %}
+          </div>
+        </div>
+      {% elif page_obj.paginator.count %}
+        <div class="px-4 py-3 border-t border-grey-border bg-grey-card/40 text-body-sm text-grey">
+          {{ page_obj.paginator.count }} investor{{ page_obj.paginator.count|pluralize }}
+        </div>
+      {% endif %}
     </div>
   </section>
 </div>
