@@ -32,6 +32,7 @@
             <span class="text-grey">—</span>
           {% endfor %}
         </div>
+        {% if can_write %}
         <button
           class="px-3 py-1 rounded-badge bg-navy text-white text-body-sm"
           hx-get="{% url 'crm:investor_edit' investor.pk %}"
@@ -39,6 +40,7 @@
           hx-swap="innerHTML">
           Edit
         </button>
+        {% endif %}
       </div>
 
       <dl class="space-y-1 text-grey">
@@ -125,6 +127,7 @@
     <div class="border border-grey-border rounded-card p-4 bg-white">
       <div class="flex items-center justify-between mb-2">
         <div class="text-heading text-navy">About</div>
+        {% if can_write %}
         <button
           class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
           hx-get="{% url 'crm:investor_about_edit' investor.pk %}"
@@ -132,6 +135,7 @@
           hx-swap="innerHTML">
           {% if investor.about %}Edit{% else %}Add{% endif %}
         </button>
+        {% endif %}
       </div>
       <div class="text-grey whitespace-pre-wrap">{% if investor.about %}{{ investor.about }}{% else %}No details added.{% endif %}</div>
     </div>
@@ -139,6 +143,7 @@
     <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
       <div class="flex items-center justify-between mb-2">
         <div class="text-heading text-navy">Reminders</div>
+        {% if can_write %}
         <button
           class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
           hx-get="{% url 'crm:reminder_create' investor.pk %}"
@@ -146,6 +151,7 @@
           hx-swap="innerHTML">
           + Add
         </button>
+        {% endif %}
       </div>
       <ul class="space-y-1 text-body-sm">
         {% for reminder in reminders %}
@@ -157,6 +163,7 @@
                 {{ reminder.due_date|date_ordinal }}
               </div>
             </div>
+            {% if can_write %}
             <form method="post" action="{% url 'crm:reminder_done' investor.pk reminder.pk %}"
                   hx-post="{% url 'crm:reminder_done' investor.pk reminder.pk %}"
                   hx-target="closest li"
@@ -168,6 +175,7 @@
                 Done
               </button>
             </form>
+            {% endif %}
           </li>
         {% empty %}
           <li class="text-grey">No active reminders.</li>
@@ -186,6 +194,7 @@
     <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
       <div class="flex items-center justify-between mb-2">
         <div class="text-heading text-navy">Other Contacts</div>
+        {% if can_write %}
         <button
           class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
           hx-get="{% url 'crm:contact_create' investor.pk %}"
@@ -193,12 +202,13 @@
           hx-swap="innerHTML">
           + Add
         </button>
+        {% endif %}
       </div>
       <table class="w-full text-left text-body-sm">
         <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
           <tr>
             <th class="py-1.5 px-1">Name</th>
-            <th class="py-1.5 px-1 text-right"></th>
+            {% if can_write %}<th class="py-1.5 px-1 text-right"></th>{% endif %}
           </tr>
         </thead>
         <tbody class="text-grey">
@@ -206,6 +216,7 @@
             <tr x-show="showAll || {{ forloop.counter }} <= 5"
                 class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
               <td class="py-1 text-navy">{{ contact.name }}</td>
+              {% if can_write %}
               <td class="py-1 text-right space-x-2">
                 <button
                   type="button"
@@ -220,15 +231,16 @@
                   <button type="submit" class="text-body-sm text-grey hover:text-danger">Delete</button>
                 </form>
               </td>
+              {% endif %}
             </tr>
           {% empty %}
             <tr>
-              <td colspan="2" class="py-2 text-grey">No additional contacts.</td>
+              <td colspan="{% if can_write %}2{% else %}1{% endif %}" class="py-2 text-grey">No additional contacts.</td>
             </tr>
           {% endfor %}
           {% if contacts|length > 5 %}
             <tr x-show="!showAll" class="border-t border-grey-border">
-              <td colspan="2" class="py-2">
+              <td colspan="{% if can_write %}2{% else %}1{% endif %}" class="py-2">
                 <button type="button" @click="showAll = true"
                         class="text-body-sm text-accent hover:underline font-medium">
                   Show all ({{ contacts|length }})
@@ -243,6 +255,7 @@
     <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
       <div class="flex items-center justify-between mb-2">
         <div class="text-heading text-navy">Ex Contacts</div>
+        {% if can_write %}
         <button
           class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
           hx-get="{% url 'crm:contact_mark_ex' investor.pk %}"
@@ -250,6 +263,7 @@
           hx-swap="innerHTML">
           Mark as ex
         </button>
+        {% endif %}
       </div>
       <table class="w-full text-left text-body-sm">
         <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">

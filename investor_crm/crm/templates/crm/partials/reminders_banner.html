@@ -23,6 +23,7 @@
               {{ reminder.due_date|date_ordinal }}
             </span>
           </div>
+          {% if can_write %}
           <form method="post" action="{% url 'crm:reminder_done' reminder.investor.pk reminder.pk %}"
                 hx-post="{% url 'crm:reminder_done' reminder.investor.pk reminder.pk %}"
                 hx-target="closest li"
@@ -34,6 +35,7 @@
               Done
             </button>
           </form>
+          {% endif %}
         </li>
       {% endfor %}
     </ul>

@@ -80,12 +80,15 @@ class RegisterForm(TailwindFormMixin, UserCreationForm):
         return email
 
     def save(self, commit: bool = True) -> User:
+        from .permissions import assign_read_only
+
         email = self.cleaned_data['email'].lower()
         user = User.objects.create_user(
             username=email,
             email=email,
             password=self.cleaned_data['password1'],
         )
+        assign_read_only(user)
         return user
 
 

@@ -14,6 +14,8 @@ from django.urls import reverse
 
 from django.contrib.auth import login, logout
 
+from .permissions import write_required
+
 from .forms import (
     CallLogForm,
     CoInvestmentForm,
@@ -403,6 +405,7 @@ def investor_list(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@write_required
 def investor_import(request: HttpRequest) -> HttpResponse:
     """Upload .xlsx to create/update investors from spreadsheet columns."""
     result = None
@@ -590,6 +593,7 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def investor_create(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         form = InvestorForm(request.POST)
@@ -612,6 +616,7 @@ def investor_create(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@write_required
 def investor_edit(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -635,6 +640,7 @@ def investor_edit(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def investor_about_edit(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -658,6 +664,7 @@ def investor_about_edit(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def investor_delete(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -676,6 +683,7 @@ def investor_delete(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def contact_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -701,6 +709,7 @@ def contact_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def contact_delete(
     request: HttpRequest, pk: int, contact_pk: int
 ) -> HttpResponse:
@@ -715,6 +724,7 @@ def contact_delete(
 
 
 @login_required
+@write_required
 def contact_mark_ex(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -745,6 +755,7 @@ def contact_mark_ex(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def calllog_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -769,6 +780,7 @@ def calllog_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def calllog_edit(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     call = get_object_or_404(CallLog, pk=call_pk, investor=investor)
@@ -796,6 +808,7 @@ def calllog_edit(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def calllog_delete(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     call = get_object_or_404(CallLog, pk=call_pk, investor=investor)
@@ -808,6 +821,7 @@ def calllog_delete(request: HttpRequest, pk: int, call_pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def meetinglog_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -833,6 +847,7 @@ def meetinglog_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def meetinglog_edit(request: HttpRequest, pk: int, meeting_pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     meeting = get_object_or_404(MeetingLog, pk=meeting_pk, investor=investor)
@@ -860,6 +875,7 @@ def meetinglog_edit(request: HttpRequest, pk: int, meeting_pk: int) -> HttpRespo
 
 
 @login_required
+@write_required
 def meetinglog_delete(
     request: HttpRequest, pk: int, meeting_pk: int
 ) -> HttpResponse:
@@ -874,6 +890,7 @@ def meetinglog_delete(
 
 
 @login_required
+@write_required
 def emaillog_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -898,6 +915,7 @@ def emaillog_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def emaillog_edit(request: HttpRequest, pk: int, email_pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     email = get_object_or_404(EmailLog, pk=email_pk, investor=investor)
@@ -925,6 +943,7 @@ def emaillog_edit(request: HttpRequest, pk: int, email_pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def emaillog_delete(
     request: HttpRequest, pk: int, email_pk: int
 ) -> HttpResponse:
@@ -939,6 +958,7 @@ def emaillog_delete(
 
 
 @login_required
+@write_required
 def coinvestment_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -965,6 +985,7 @@ def coinvestment_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def coinvestment_edit(
     request: HttpRequest, pk: int, coinvest_pk: int
 ) -> HttpResponse:
@@ -993,6 +1014,7 @@ def coinvestment_edit(
 
 
 @login_required
+@write_required
 def coinvestment_delete(
     request: HttpRequest, pk: int, coinvest_pk: int
 ) -> HttpResponse:
@@ -1007,6 +1029,7 @@ def coinvestment_delete(
 
 
 @login_required
+@write_required
 def commitment_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -1033,6 +1056,7 @@ def commitment_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def commitment_edit(
     request: HttpRequest, pk: int, commit_pk: int
 ) -> HttpResponse:
@@ -1062,6 +1086,7 @@ def commitment_edit(
 
 
 @login_required
+@write_required
 def commitment_delete(
     request: HttpRequest, pk: int, commit_pk: int
 ) -> HttpResponse:
@@ -1078,6 +1103,7 @@ def commitment_delete(
 
 
 @login_required
+@write_required
 def infolink_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -1104,6 +1130,7 @@ def infolink_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def infolink_edit(
     request: HttpRequest, pk: int, link_pk: int
 ) -> HttpResponse:
@@ -1131,6 +1158,7 @@ def infolink_edit(
 
 
 @login_required
+@write_required
 def infolink_delete(
     request: HttpRequest, pk: int, link_pk: int
 ) -> HttpResponse:
@@ -1145,6 +1173,7 @@ def infolink_delete(
 
 
 @login_required
+@write_required
 def reminder_create(request: HttpRequest, pk: int) -> HttpResponse:
     investor = get_object_or_404(Investor, pk=pk)
     if request.method == 'POST':
@@ -1170,6 +1199,7 @@ def reminder_create(request: HttpRequest, pk: int) -> HttpResponse:
 
 
 @login_required
+@write_required
 def reminder_done(
     request: HttpRequest, pk: int, reminder_pk: int
 ) -> HttpResponse:
@@ -1183,6 +1213,7 @@ def reminder_done(
 
 
 @login_required
+@write_required
 def reminder_delete(
     request: HttpRequest, pk: int, reminder_pk: int
 ) -> HttpResponse:
