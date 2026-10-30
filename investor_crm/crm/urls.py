@@ -137,4 +137,16 @@ urlpatterns = [
         name='reminder_delete',
     ),
     path('reminders/all/', views.reminders_banner, name='reminders_banner'),
+    path('agents/', views.agents_page, name='agents'),
+    path('agents/notes/create/', views.agent_note_create, name='agent_note_create'),
+    path(
+        'agents/notes/<int:pk>/edit/',
+        views.agent_note_edit,
+        name='agent_note_edit',
+    ),
+    path(
+        'agents/notes/<int:pk>/delete/',
+        views.agent_note_delete,
+        name='agent_note_delete',
+    ),
 ]

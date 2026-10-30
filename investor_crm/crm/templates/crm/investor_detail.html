@@ -218,14 +218,6 @@
               <td class="py-1 text-navy">{{ contact.name }}</td>
               {% if can_write %}
               <td class="py-1 text-right space-x-2">
-                <button
-                  type="button"
-                  class="text-body-sm text-grey hover:text-accent"
-                  hx-get="{% url 'crm:contact_mark_ex' investor.pk %}?person=contact:{{ contact.pk }}"
-                  hx-target="#modal-container"
-                  hx-swap="innerHTML">
-                  Mark as ex
-                </button>
                 <form method="post" action="{% url 'crm:contact_delete' investor.pk contact.pk %}" hx-post="{% url 'crm:contact_delete' investor.pk contact.pk %}" hx-swap="none" hx-confirm="Delete {{ contact.name }}?" class="inline">
                   {% csrf_token %}
                   <button type="submit" class="text-body-sm text-grey hover:text-danger">Delete</button>

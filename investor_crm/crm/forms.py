@@ -6,6 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import (
+    AgentNote,
     CallLog,
     CoInvestment,
     Contact,
@@ -524,3 +525,76 @@ class ReminderForm(TailwindFormMixin, forms.ModelForm):
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+
+class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
+    class Meta:
+        model = AgentNote
+        fields = [
+            'investor',
+            'note_type',
+            'title',
+            'body',
+            'link',
+            'person_name',
+            'moved_from',
+            'moved_to',
+        ]
+        labels = {
+            'note_type': 'Type',
+            'title': 'Headline / label',
+            'body': 'Detail',
+            'link': 'Source link',
+            'person_name': 'Person',
+            'moved_from': 'From',
+            'moved_to': 'To',
+        }
+        widgets = {
+            'body': forms.Textarea(attrs={'rows': 3}),
+            'link': forms.URLInput(attrs={'placeholder': 'https://…'}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields['investor'].queryset = Investor.objects.order_by('name')
+        self.fields['investor'].empty_label = 'Select investor…'
+        for name in (
+            'title',
+            'body',
+            'link',
+            'person_name',
+            'moved_from',
+            'moved_to',
+        ):
+            self.fields[name].required = False
+        self.fields['moved_from'].widget.attrs['placeholder'] = (
+            'Previous role / organisation'
+        )
+        self.fields['moved_to'].widget.attrs['placeholder'] = (
+            'New role / organisation'
+        )
+        self.fields['title'].widget.attrs['placeholder'] = (
+            'e.g. Appoints new CIO / Commits to Fund X'
+        )
+
+    def clean(self) -> dict[str, Any]:
+        cleaned = super().clean()
+        note_type = cleaned.get('note_type')
+        if note_type == 'person_change':
+            if not (cleaned.get('person_name') or '').strip():
+                self.add_error('person_name', 'Enter the person’s name.')
+        elif note_type == 'news':
+            if not (cleaned.get('title') or '').strip() and not (
+                cleaned.get('body') or ''
+            ).strip():
+                self.add_error('title', 'Enter a headline or detail for the news.')
+            if not (cleaned.get('link') or '').strip():
+                self.add_error('link', 'Include a source link for news.')
+        elif note_type == 'investment':
+            if not (cleaned.get('title') or '').strip() and not (
+                cleaned.get('body') or ''
+            ).strip():
+                self.add_error(
+                    'title', 'Enter a label or detail for the investment.'
+                )
+        return cleaned

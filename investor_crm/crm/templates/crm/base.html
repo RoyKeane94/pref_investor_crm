@@ -90,6 +90,9 @@
       <div class="flex items-center gap-4">
         {% if user.is_authenticated %}
           <span class="text-body-sm text-grey truncate max-w-[200px]" title="{{ user.email }}">{{ user.email }}</span>
+          {% if is_agent %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-badge border border-grey-border text-table-header uppercase text-grey">Agent</span>
+          {% endif %}
           <span class="h-4 w-px bg-grey-border" aria-hidden="true"></span>
           <form method="post" action="{% url 'logout' %}" class="inline">
             {% csrf_token %}

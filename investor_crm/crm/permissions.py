@@ -36,5 +36,23 @@ def write_required(view_func: Callable) -> Callable:
     return _wrapped
 
 
+def is_agent_user(user: User) -> bool:
+    """Registered agent accounts: read-only CRM, write only on /agents."""
+    if not getattr(user, 'is_authenticated', False) or user.is_superuser:
+        return False
+    return user.groups.filter(name=READ_ONLY_GROUP_NAME).exists()
+
+
+def can_edit_agent_note(user: User, note) -> bool:
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if user_can_write(user):
+        return True
+    return note.author_id == user.id
+
+
 def can_write_context(request: HttpRequest) -> dict[str, bool]:
-    return {'can_write': user_can_write(request.user)}
+    return {
+        'can_write': user_can_write(request.user),
+        'is_agent': is_agent_user(request.user),
+    }

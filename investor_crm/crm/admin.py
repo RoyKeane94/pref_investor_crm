@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    AgentNote,
     CallLog,
     CoInvestment,
     Contact,
@@ -95,3 +96,27 @@ class CoInvestmentAdmin(admin.ModelAdmin):
 class ReminderAdmin(admin.ModelAdmin):
     list_display = ('investor', 'description', 'due_date', 'is_done')
     list_filter = ('is_done', 'due_date')
+
+
+@admin.register(AgentNote)
+class AgentNoteAdmin(admin.ModelAdmin):
+    list_display = (
+        'investor',
+        'note_type',
+        'title',
+        'author',
+        'person_name',
+        'created_at',
+    )
+    list_filter = ('note_type', 'created_at')
+    search_fields = (
+        'investor__name',
+        'title',
+        'body',
+        'link',
+        'person_name',
+        'moved_from',
+        'moved_to',
+        'author__email',
+    )
+    raw_id_fields = ('investor', 'author')

@@ -351,3 +351,64 @@ class Reminder(models.Model):
     @property
     def is_overdue(self) -> bool:
         return not self.is_done and self.due_date < date.today()
+
+
+class AgentNote(models.Model):
+    """Findings logged by agent accounts for team review."""
+
+    NOTE_TYPE_CHOICES = [
+        ('news', 'News'),
+        ('person_change', 'Personnel change'),
+        ('investment', 'Investment'),
+    ]
+
+    investor = models.ForeignKey(
+        Investor, on_delete=models.CASCADE, related_name='agent_notes'
+    )
+    author = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='agent_notes',
+    )
+    note_type = models.CharField(
+        max_length=20, choices=NOTE_TYPE_CHOICES, default='news'
+    )
+    title = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Headline or short label',
+    )
+    body = models.TextField(
+        blank=True,
+        help_text='Summary / detail',
+    )
+    link = models.URLField(
+        blank=True,
+        help_text='Source URL (news article, press release, etc.)',
+    )
+    person_name = models.CharField(max_length=255, blank=True)
+    moved_from = models.CharField(
+        max_length=255, blank=True, help_text='Previous role / organisation'
+    )
+    moved_to = models.CharField(
+        max_length=255, blank=True, help_text='New role / organisation'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f'{self.get_note_type_display()} · {self.investor.name}'
+
+    @property
+    def display_summary(self) -> str:
+        if self.note_type == 'person_change':
+            name = (self.person_name or '').strip() or 'Unknown'
+            frm = (self.moved_from or '').strip() or '—'
+            to = (self.moved_to or '').strip() or '—'
+            return f'{name}: {frm} → {to}'
+        return (self.title or '').strip() or (self.body or '').strip() or '—'

@@ -6,7 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Case, Count, DateField, F, IntegerField, OuterRef, Prefetch, Q, Subquery, Value, When
 from django.db.models.functions import Coalesce, Greatest, Least, NullIf
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+)
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -14,9 +19,10 @@ from django.urls import reverse
 
 from django.contrib.auth import login, logout
 
-from .permissions import write_required
+from .permissions import can_edit_agent_note, write_required
 
 from .forms import (
+    AgentNoteForm,
     CallLogForm,
     CoInvestmentForm,
     ContactForm,
@@ -33,6 +39,7 @@ from .forms import (
 )
 from .excel_import import import_workbook
 from .models import (
+    AgentNote,
     CallLog,
     CoInvestment,
     Contact,
@@ -1223,3 +1230,117 @@ def reminder_delete(
     response = HttpResponse(status=204)
     response['HX-Trigger'] = 'remindersChanged'
     return response
+
+
+def _agent_rows_by_investor(
+    notes_qs,
+    investor_id: str = '',
+):
+    """Group notes into investor rows for the agents table."""
+    qs = notes_qs.select_related('investor', 'author').order_by(
+        'investor__name', '-created_at'
+    )
+    if investor_id.isdigit():
+        qs = qs.filter(investor_id=int(investor_id))
+
+    rows: list[dict] = []
+    current = None
+    for note in qs[:500]:
+        if current is None or current['investor'].pk != note.investor_id:
+            current = {
+                'investor': note.investor,
+                'news': [],
+                'person_changes': [],
+                'investments': [],
+                'latest_at': note.created_at,
+                'notes': [],
+            }
+            rows.append(current)
+        current['notes'].append(note)
+        if note.created_at and note.created_at > current['latest_at']:
+            current['latest_at'] = note.created_at
+        if note.note_type == 'news':
+            current['news'].append(note)
+        elif note.note_type == 'person_change':
+            current['person_changes'].append(note)
+        elif note.note_type == 'investment':
+            current['investments'].append(note)
+    rows.sort(key=lambda r: r['latest_at'], reverse=True)
+    return rows
+
+
+def _agents_page_context(form: AgentNoteForm, investor_id: str = '') -> dict:
+    rows = _agent_rows_by_investor(AgentNote.objects.all(), investor_id)
+    return {
+        'form': form,
+        'investor_rows': rows,
+        'filter_investor': investor_id,
+        'investors': Investor.objects.order_by('name'),
+        'note_types': AgentNote.NOTE_TYPE_CHOICES,
+    }
+
+
+@login_required
+def agents_page(request: HttpRequest) -> HttpResponse:
+    """Agent findings board: agents can write here; team reviews."""
+    investor_id = request.GET.get('investor') or ''
+    return render(
+        request,
+        'crm/agents.html',
+        _agents_page_context(AgentNoteForm(), investor_id),
+    )
+
+
+@login_required
+def agent_note_create(request: HttpRequest) -> HttpResponse:
+    if request.method != 'POST':
+        return redirect('crm:agents')
+    form = AgentNoteForm(request.POST)
+    if form.is_valid():
+        note = form.save(commit=False)
+        note.author = request.user
+        note.save()
+        messages.success(request, 'Finding added.')
+        return redirect('crm:agents')
+    return render(
+        request,
+        'crm/agents.html',
+        _agents_page_context(form),
+        status=400,
+    )
+
+
+@login_required
+def agent_note_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    note = get_object_or_404(AgentNote.objects.select_related('investor'), pk=pk)
+    if not can_edit_agent_note(request.user, note):
+        return HttpResponseForbidden('You cannot edit this note.')
+    if request.method == 'POST':
+        form = AgentNoteForm(request.POST, instance=note)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Note updated.')
+            return redirect('crm:agents')
+    else:
+        form = AgentNoteForm(instance=note)
+    return render(
+        request,
+        'crm/partials/agent_note_form_modal.html',
+        {
+            'form': form,
+            'note': note,
+            'post_url': reverse('crm:agent_note_edit', args=[note.pk]),
+            'title': 'Edit agent note',
+        },
+    )
+
+
+@login_required
+def agent_note_delete(request: HttpRequest, pk: int) -> HttpResponse:
+    note = get_object_or_404(AgentNote, pk=pk)
+    if not can_edit_agent_note(request.user, note):
+        return HttpResponseForbidden('You cannot delete this note.')
+    if request.method == 'POST':
+        note.delete()
+        messages.success(request, 'Note deleted.')
+    return redirect('crm:agents')

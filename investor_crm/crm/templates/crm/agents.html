@@ -1,0 +1,271 @@
+{% extends "crm/base.html" %}
+{% load crm_tags %}
+
+{% block title %}Agents · Investor CRM{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <h1 class="text-page-title text-navy">Agent findings</h1>
+    <p class="text-body-sm text-grey mt-1">
+      Findings are linked to CRM investors and reviewed in the table below — news (with source link), personnel changes, and investments.
+    </p>
+  </div>
+
+  {% if messages %}
+  <ul class="space-y-1">
+    {% for message in messages %}
+      <li class="text-body-sm rounded-card border border-grey-border px-3 py-2 {% if message.tags == 'error' %}bg-reminder-overdue-bg text-reminder-overdue{% else %}bg-grey-card text-navy{% endif %}">
+        {{ message }}
+      </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <section class="border border-grey-border rounded-card bg-white p-4 md:p-5">
+    <h2 class="text-heading text-navy mb-4">Add finding</h2>
+    <form
+      method="post"
+      action="{% url 'crm:agent_note_create' %}"
+      class="space-y-4 text-body-sm"
+      x-data="{ noteType: '{{ form.note_type.value|default:'news' }}' }">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.investor.label }}</label>
+          {% include "crm/partials/custom_select.html" with field=form.investor %}
+          {% for error in form.investor.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.note_type.label }}</label>
+          <select
+            name="{{ form.note_type.name }}"
+            id="{{ form.note_type.id_for_label }}"
+            x-model="noteType"
+            class="w-full border border-grey-border rounded-card px-3 py-2 text-body-sm bg-white text-navy focus:outline-none focus:ring-1 focus:ring-accent">
+            {% for value, label in form.note_type.field.choices %}
+              <option value="{{ value }}" {% if form.note_type.value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% for error in form.note_type.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div x-show="noteType === 'person_change'" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.person_name.label }}</label>
+          {{ form.person_name }}
+          {% for error in form.person_name.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.moved_from.label }}</label>
+          {{ form.moved_from }}
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.moved_to.label }}</label>
+          {{ form.moved_to }}
+        </div>
+      </div>
+
+      <div x-show="noteType !== 'person_change'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">{{ form.title.label }}</label>
+          {{ form.title }}
+          {% for error in form.title.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ form.link.label }}
+            <span x-show="noteType === 'news'" class="normal-case text-grey">(required)</span>
+          </label>
+          {{ form.link }}
+          {% for error in form.link.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-field-label uppercase text-grey mb-1">{{ form.body.label }}</label>
+        {{ form.body }}
+        {% for error in form.body.errors %}
+          <p class="text-xs text-danger mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="flex justify-end">
+        <button type="submit" class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Save finding
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="space-y-3">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <h2 class="text-heading text-navy">By investor</h2>
+      <form method="get" action="{% url 'crm:agents' %}" class="flex flex-wrap gap-2 text-body-sm">
+        <select name="investor" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
+          <option value="">All investors with findings</option>
+          {% for inv in investors %}
+            <option value="{{ inv.pk }}" {% if filter_investor == inv.pk|stringformat:"s" %}selected{% endif %}>{{ inv.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="px-3 py-2 rounded-badge border border-grey-border text-navy hover:bg-grey-hover">
+          Filter
+        </button>
+      </form>
+    </div>
+
+    <div class="border border-grey-border rounded-table overflow-x-auto bg-white">
+      <table class="min-w-full text-left text-body-sm">
+        <thead class="bg-grey-card text-table-header uppercase text-grey-dark">
+          <tr>
+            <th class="px-4 py-2 w-[18%]">Investor</th>
+            <th class="px-4 py-2 w-[27%]">News</th>
+            <th class="px-4 py-2 w-[27%]">Personnel changes</th>
+            <th class="px-4 py-2 w-[28%]">Investments</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in investor_rows %}
+            <tr class="border-t border-grey-border align-top {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+              <td class="px-4 py-3">
+                <a href="{% url 'crm:investor_detail' row.investor.pk %}" class="text-navy font-medium hover:underline">
+                  {{ row.investor.name }}
+                </a>
+                <div class="text-grey mt-1">Updated {{ row.latest_at|date:"j M Y" }}</div>
+              </td>
+              <td class="px-4 py-3">
+                {% if row.news %}
+                  <ul class="space-y-2">
+                    {% for note in row.news %}
+                      <li class="group">
+                        <div class="text-navy">
+                          {% if note.title %}{{ note.title }}{% elif note.body %}{{ note.body|truncatechars:120 }}{% else %}—{% endif %}
+                        </div>
+                        {% if note.body and note.title %}
+                          <div class="text-grey mt-0.5">{{ note.body|truncatechars:160 }}</div>
+                        {% endif %}
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                          {% if note.link %}
+                            <a href="{{ note.link }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium hover:bg-accent/20">
+                              Source ↗
+                            </a>
+                          {% endif %}
+                          {% if can_write or note.author_id == user.id %}
+                            <button type="button" class="text-grey hover:text-accent text-table-header"
+                                    hx-get="{% url 'crm:agent_note_edit' note.pk %}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">Edit</button>
+                            <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline"
+                                  onsubmit="return confirm('Delete this finding?');">
+                              {% csrf_token %}
+                              <button type="submit" class="text-grey hover:text-danger text-table-header">Delete</button>
+                            </form>
+                          {% endif %}
+                        </div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-grey">—</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if row.person_changes %}
+                  <ul class="space-y-2">
+                    {% for note in row.person_changes %}
+                      <li>
+                        <div class="text-navy">
+                          <span class="font-medium">{{ note.person_name|default:"Unknown" }}</span>
+                          <span class="text-grey"> · </span>
+                          {{ note.moved_from|default:"—" }}
+                          <span class="text-grey"> → </span>
+                          {{ note.moved_to|default:"—" }}
+                        </div>
+                        {% if note.body %}
+                          <div class="text-grey mt-0.5">{{ note.body|truncatechars:160 }}</div>
+                        {% endif %}
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                          {% if can_write or note.author_id == user.id %}
+                            <button type="button" class="text-grey hover:text-accent text-table-header"
+                                    hx-get="{% url 'crm:agent_note_edit' note.pk %}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">Edit</button>
+                            <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline"
+                                  onsubmit="return confirm('Delete this finding?');">
+                              {% csrf_token %}
+                              <button type="submit" class="text-grey hover:text-danger text-table-header">Delete</button>
+                            </form>
+                          {% endif %}
+                        </div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-grey">—</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                {% if row.investments %}
+                  <ul class="space-y-2">
+                    {% for note in row.investments %}
+                      <li>
+                        <div class="text-navy">
+                          {% if note.title %}{{ note.title }}{% elif note.body %}{{ note.body|truncatechars:120 }}{% else %}—{% endif %}
+                        </div>
+                        {% if note.body and note.title %}
+                          <div class="text-grey mt-0.5">{{ note.body|truncatechars:160 }}</div>
+                        {% endif %}
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                          {% if note.link %}
+                            <a href="{{ note.link }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium hover:bg-accent/20">
+                              Source ↗
+                            </a>
+                          {% endif %}
+                          {% if can_write or note.author_id == user.id %}
+                            <button type="button" class="text-grey hover:text-accent text-table-header"
+                                    hx-get="{% url 'crm:agent_note_edit' note.pk %}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">Edit</button>
+                            <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline"
+                                  onsubmit="return confirm('Delete this finding?');">
+                              {% csrf_token %}
+                              <button type="submit" class="text-grey hover:text-danger text-table-header">Delete</button>
+                            </form>
+                          {% endif %}
+                        </div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-grey">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="px-4 py-6 text-center text-grey">
+                No findings yet. Add news, personnel changes, or investments above.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
