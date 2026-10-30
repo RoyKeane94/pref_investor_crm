@@ -60,7 +60,17 @@ def build_mcp_http_app():
     name='search_investors',
     description=(
         'Search investors by name or principal-contact text, with optional '
-        'status and type filters. Returns a paged list.'
+        'status and type filters. Returns a paged list. '
+        'investor_type must be one of: asset_manager, bank, endowment_charity, '
+        'fund_manager, fund_of_funds, gatekeeper_consultant, hnw_uhnw, '
+        'insurance_company, investment_company_trust, pension_fund_company, '
+        'lgps, lgps_pool, single_family_office, swf_government, '
+        'wealth_manager_pb_mfo. '
+        'status must be one of: target_sma, target_feeder_fund, target_fund_iii, '
+        'confirmed_sma, confirmed_feeder_fund, confirmed_fund_iii, other, '
+        'confirmed, dead. '
+        'Note: "other" is a status, not an investor_type. Invalid filters return '
+        'an error object listing valid_investor_types and valid_statuses.'
     ),
 )
 async def search_investors(
@@ -97,15 +107,20 @@ async def get_investor(investor_id: int) -> dict:
 @mcp.tool(
     name='list_findings',
     description=(
-        'List agent findings (AgentNotes), filterable by investor ID, '
-        'source URL substring, and event/created date range (YYYY-MM-DD).'
+        'List agent findings (AgentNotes). Filters: investor_id, source_url '
+        'substring, type (news|person_change|investment|flag|fit_flag|checked|'
+        'note), date_from/date_to = source event_date, logged_from/logged_to = '
+        'when the entry was logged (created_at, YYYY-MM-DD). Paged.'
     ),
 )
 async def list_findings(
     investor_id: int | None = None,
     source_url: str = '',
+    type: str = '',
     date_from: str = '',
     date_to: str = '',
+    logged_from: str = '',
+    logged_to: str = '',
     page: int = 1,
     page_size: int = 25,
 ) -> dict:
@@ -113,8 +128,11 @@ async def list_findings(
         _current_user_id(),
         investor_id=investor_id,
         source_url=source_url,
+        type=type,
         date_from=date_from,
         date_to=date_to,
+        logged_from=logged_from,
+        logged_to=logged_to,
         page=page,
         page_size=page_size,
     )
@@ -124,10 +142,14 @@ async def list_findings(
     name='add_finding',
     description=(
         'Create a finding for an investor. Types: news, person_change, '
-        'investment, flag. Use flag when the team should look into this investor '
-        '(headline/detail = why). News requires source_url. Personnel changes '
-        'require person; optional from/to (moved_from/moved_to), event_date '
-        '(YYYY-MM-DD), confidence (low|medium|high).'
+        'investment, flag, fit_flag, checked, note. '
+        'flag = team should look into this investor (headline/detail = why). '
+        'fit_flag = looks like a fund fit (headline/detail = why). '
+        'checked = agent reviewed this investor (headline/detail optional). '
+        'note = general comment. News requires source_url. Personnel changes '
+        'require person; optional from/to. Always pass event_date (YYYY-MM-DD) '
+        'when the source/event date is known. Optional confidence '
+        '(low|medium|high). Do not use news for fit flags or checked marks.'
     ),
 )
 async def add_finding(

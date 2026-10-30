@@ -366,6 +366,9 @@ class AgentNote(models.Model):
         ('person_change', 'Personnel change'),
         ('investment', 'Investment'),
         ('flag', 'Flag for review'),
+        ('fit_flag', 'Fit flag'),
+        ('checked', 'Checked'),
+        ('note', 'Note'),
     ]
     CONFIDENCE_CHOICES = [
         ('low', 'Low'),
@@ -409,7 +412,7 @@ class AgentNote(models.Model):
     event_date = models.DateField(
         null=True,
         blank=True,
-        help_text='Date of the news / change / investment, if known',
+        help_text='Date of the source event (article, change, investment, etc.), if known',
     )
     confidence = models.CharField(
         max_length=10,
@@ -434,12 +437,20 @@ class AgentNote(models.Model):
             frm = (self.moved_from or '').strip() or '—'
             to = (self.moved_to or '').strip() or '—'
             return f'{name}: {frm} → {to}'
-        if self.note_type == 'flag':
+        if self.note_type in ('flag', 'fit_flag'):
             return (
                 (self.title or '').strip()
                 or (self.body or '').strip()
-                or 'Needs review'
+                or ('Fit' if self.note_type == 'fit_flag' else 'Needs review')
             )
+        if self.note_type == 'checked':
+            return (
+                (self.title or '').strip()
+                or (self.body or '').strip()
+                or 'Checked'
+            )
+        if self.note_type == 'note':
+            return (self.body or '').strip() or (self.title or '').strip() or '—'
         return (self.title or '').strip() or (self.body or '').strip() or '—'
 
 

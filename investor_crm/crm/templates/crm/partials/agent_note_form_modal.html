@@ -60,14 +60,16 @@
         <div>
           <label class="block text-field-label uppercase text-grey mb-1">
             <span x-show="noteType === 'flag'">Why look into this</span>
-            <span x-show="noteType !== 'flag'">{{ form.title.label }}</span>
+            <span x-show="noteType === 'fit_flag'">Why this is a fit</span>
+            <span x-show="noteType === 'note' || noteType === 'checked'">Title (optional)</span>
+            <span x-show="noteType !== 'flag' && noteType !== 'fit_flag' && noteType !== 'note' && noteType !== 'checked'">{{ form.title.label }}</span>
           </label>
           {{ form.title }}
           {% for error in form.title.errors %}
             <p class="text-xs text-danger mt-1">{{ error }}</p>
           {% endfor %}
         </div>
-        <div x-show="noteType !== 'flag'">
+        <div x-show="noteType !== 'flag' && noteType !== 'fit_flag' && noteType !== 'note' && noteType !== 'checked'">
           <label class="block text-field-label uppercase text-grey mb-1">{{ form.link.label }}</label>
           {{ form.link }}
           {% for error in form.link.errors %}
@@ -77,9 +79,21 @@
       </div>
 
       <div>
-        <label class="block text-field-label uppercase text-grey mb-1">{{ form.body.label }}</label>
+        <label class="block text-field-label uppercase text-grey mb-1">
+          <span x-show="noteType === 'note'">Note</span>
+          <span x-show="noteType === 'checked'">Detail (optional)</span>
+          <span x-show="noteType !== 'note' && noteType !== 'checked'">{{ form.body.label }}</span>
+        </label>
         {{ form.body }}
         {% for error in form.body.errors %}
+          <p class="text-xs text-danger mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div>
+        <label class="block text-field-label uppercase text-grey mb-1">{{ form.event_date.label }}</label>
+        {{ form.event_date }}
+        {% for error in form.event_date.errors %}
           <p class="text-xs text-danger mt-1">{{ error }}</p>
         {% endfor %}
       </div>

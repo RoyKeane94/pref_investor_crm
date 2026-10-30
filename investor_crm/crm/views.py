@@ -1222,6 +1222,9 @@ def _agent_rows_by_investor(
                 'person_changes': [],
                 'investments': [],
                 'flags': [],
+                'fit_flags': [],
+                'checked': [],
+                'general_notes': [],
                 'latest_at': note.created_at,
                 'notes': [],
             }
@@ -1237,6 +1240,12 @@ def _agent_rows_by_investor(
             current['investments'].append(note)
         elif note.note_type == 'flag':
             current['flags'].append(note)
+        elif note.note_type == 'fit_flag':
+            current['fit_flags'].append(note)
+        elif note.note_type == 'checked':
+            current['checked'].append(note)
+        elif note.note_type == 'note':
+            current['general_notes'].append(note)
     rows.sort(key=lambda r: r['latest_at'], reverse=True)
     return rows
 
@@ -1316,6 +1325,10 @@ def agent_note_create(request: HttpRequest) -> HttpResponse:
     if form.is_valid():
         note = form.save(commit=False)
         note.author = request.user
+        if note.note_type == 'checked' and not (note.title or '').strip() and not (
+            note.body or ''
+        ).strip():
+            note.title = 'Checked'
         note.save()
         messages.success(request, 'Finding added.')
         return redirect('crm:agents')

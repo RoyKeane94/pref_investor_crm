@@ -59,6 +59,9 @@ def serialize_finding(note: AgentNote) -> dict[str, Any]:
         'detail': note.body or '',
         'source_url': note.link or '',
         'event_date': _iso(note.event_date),
+        'logged_date': (
+            note.created_at.date().isoformat() if note.created_at else None
+        ),
         'confidence': note.confidence or '',
         'person': note.person_name or '',
         'from': note.moved_from or '',

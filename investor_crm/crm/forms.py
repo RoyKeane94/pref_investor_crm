@@ -516,7 +516,7 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             'person_name': 'Person',
             'moved_from': 'From',
             'moved_to': 'To',
-            'event_date': 'Event date',
+            'event_date': 'Source / event date',
             'confidence': 'Confidence',
         }
         widgets = {
@@ -578,4 +578,18 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
                     'title',
                     'Explain why the team should look into this investor.',
                 )
+        elif note_type == 'fit_flag':
+            if not (cleaned.get('title') or '').strip() and not (
+                cleaned.get('body') or ''
+            ).strip():
+                self.add_error(
+                    'title',
+                    'Explain why this investor looks like a fit.',
+                )
+        elif note_type == 'note':
+            if not (cleaned.get('title') or '').strip() and not (
+                cleaned.get('body') or ''
+            ).strip():
+                self.add_error('body', 'Enter a note.')
+        # checked: optional title/detail — a bare checkmark is enough
         return cleaned

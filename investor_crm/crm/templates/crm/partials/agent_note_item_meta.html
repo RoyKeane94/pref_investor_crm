@@ -1,0 +1,25 @@
+{# Shared date / source / edit controls under a finding. Expects: note; optional clear_confirm #}
+<div class="mt-1 flex flex-wrap items-center gap-2">
+  {% if note.event_date %}
+    <span class="text-grey text-table-header">{{ note.event_date|date:"j M Y" }}</span>
+  {% endif %}
+  {% if note.link %}
+    <a href="{{ note.link }}" target="_blank" rel="noopener"
+       class="inline-flex items-center gap-1 px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium hover:bg-accent/20">
+      Source ↗
+    </a>
+  {% endif %}
+  {% if can_write or note.author_id == user.id %}
+    <button type="button" class="text-grey hover:text-accent text-table-header"
+            hx-get="{% url 'crm:agent_note_edit' note.pk %}"
+            hx-target="#modal-container"
+            hx-swap="innerHTML">Edit</button>
+    <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline"
+          onsubmit="return confirm('{{ clear_confirm|default:"Delete this finding?" }}');">
+      {% csrf_token %}
+      <button type="submit" class="text-grey hover:text-danger text-table-header">
+        {{ clear_label|default:"Delete" }}
+      </button>
+    </form>
+  {% endif %}
+</div>

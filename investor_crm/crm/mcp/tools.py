@@ -24,6 +24,28 @@ VALID_NOTE_TYPES = {c[0] for c in AgentNote.NOTE_TYPE_CHOICES}
 VALID_CONFIDENCE = {c[0] for c in AgentNote.CONFIDENCE_CHOICES}
 VALID_INVESTOR_TYPES = {c[0] for c in Investor.TYPE_CHOICES}
 VALID_STATUSES = {c[0] for c in Investor.STATUS_CHOICES}
+INVESTOR_TYPE_VALUES = [c[0] for c in Investor.TYPE_CHOICES]
+STATUS_VALUES = [c[0] for c in Investor.STATUS_CHOICES]
+
+
+def _filter_error(field: str, value: str) -> dict[str, Any]:
+    """Structured error so agents see valid enums instead of a bare tool failure."""
+    tip = ''
+    if field == 'investor_type' and value in VALID_STATUSES:
+        tip = (
+            f' "{value}" is a status value, not an investor type — '
+            f'pass it as status="{value}" instead.'
+        )
+    elif field == 'status' and value in VALID_INVESTOR_TYPES:
+        tip = (
+            f' "{value}" is an investor type, not a status — '
+            f'pass it as investor_type="{value}" instead.'
+        )
+    return {
+        'error': f'Invalid {field}={value!r}.{tip}',
+        'valid_investor_types': INVESTOR_TYPE_VALUES,
+        'valid_statuses': STATUS_VALUES,
+    }
 
 
 def _close() -> None:
@@ -87,6 +109,14 @@ def _validate_finding_fields(
             'headline or detail is required for flag findings '
             '(why the team should look into this investor).'
         )
+    if note_type == 'fit_flag' and not headline.strip() and not detail.strip():
+        raise ValueError(
+            'headline or detail is required for fit_flag '
+            '(why this investor looks like a fit).'
+        )
+    if note_type == 'note' and not headline.strip() and not detail.strip():
+        raise ValueError('headline or detail is required for notes.')
+    # checked: optional headline/detail
 
 
 def search_investors(
@@ -111,18 +141,12 @@ def search_investors(
         status = (status or '').strip()
         if status:
             if status not in VALID_STATUSES:
-                raise ValueError(
-                    f'Invalid status. Choose one of: {", ".join(sorted(VALID_STATUSES))}.'
-                )
+                return _filter_error('status', status)
             qs = qs.filter(statuses__contains=[status])
         investor_type = (investor_type or '').strip()
         if investor_type:
             if investor_type not in VALID_INVESTOR_TYPES:
-                raise ValueError(
-                    'Invalid type. Choose one of: '
-                    + ', '.join(sorted(VALID_INVESTOR_TYPES))
-                    + '.'
-                )
+                return _filter_error('investor_type', investor_type)
             qs = qs.filter(type=investor_type)
 
         page = max(1, int(page or 1))
@@ -175,8 +199,11 @@ def list_findings(
     *,
     investor_id: int | None = None,
     source_url: str = '',
+    type: str = '',
     date_from: str = '',
     date_to: str = '',
+    logged_from: str = '',
+    logged_to: str = '',
     page: int = 1,
     page_size: int = 25,
 ) -> dict[str, Any]:
@@ -189,18 +216,28 @@ def list_findings(
         source_url = (source_url or '').strip()
         if source_url:
             qs = qs.filter(link__icontains=source_url)
+        note_type = (type or '').strip()
+        if note_type:
+            if note_type not in VALID_NOTE_TYPES:
+                return {
+                    'error': f'Invalid type={note_type!r}.',
+                    'valid_types': sorted(VALID_NOTE_TYPES),
+                }
+            qs = qs.filter(note_type=note_type)
+        # Source / event date on the finding
         d_from = _parse_optional_date(date_from or None, 'date_from')
         d_to = _parse_optional_date(date_to or None, 'date_to')
         if d_from:
-            qs = qs.filter(
-                Q(event_date__gte=d_from)
-                | Q(event_date__isnull=True, created_at__date__gte=d_from)
-            )
+            qs = qs.filter(event_date__gte=d_from)
         if d_to:
-            qs = qs.filter(
-                Q(event_date__lte=d_to)
-                | Q(event_date__isnull=True, created_at__date__lte=d_to)
-            )
+            qs = qs.filter(event_date__lte=d_to)
+        # When the agent logged the entry (created_at)
+        log_from = _parse_optional_date(logged_from or None, 'logged_from')
+        log_to = _parse_optional_date(logged_to or None, 'logged_to')
+        if log_from:
+            qs = qs.filter(created_at__date__gte=log_from)
+        if log_to:
+            qs = qs.filter(created_at__date__lte=log_to)
 
         page = max(1, int(page or 1))
         page_size = min(100, max(1, int(page_size or 25)))
@@ -253,6 +290,8 @@ def add_finding(
         if not Investor.objects.filter(pk=investor_id).exists():
             raise ValueError(f'Investor {investor_id} not found.')
         parsed_event = _parse_optional_date(event_date or None, 'event_date')
+        if note_type == 'checked' and not headline and not detail:
+            headline = 'Checked'
         note = AgentNote(
             investor_id=investor_id,
             author=user,
