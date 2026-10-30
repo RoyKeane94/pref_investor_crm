@@ -57,6 +57,8 @@
                   <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-body-sm">Other</span>
                 {% elif s == 'confirmed' %}
                   <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-body-sm">Revisit</span>
+                {% elif s == 'dead' %}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-dead-bg text-status-dead-text border border-status-dead-border text-body-sm">Dead</span>
                 {% endif %}
               {% empty %}
                 <span class="text-grey">—</span>

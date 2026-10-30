@@ -42,6 +42,9 @@ module.exports = {
           'other-bg': '#f1f3f7',
           'other-text': '#5a6578',
           'other-border': '#e2e6ed',
+          'dead-bg': '#f4f4f5',
+          'dead-text': '#52525b',
+          'dead-border': '#d4d4d8',
         },
         decision: {
           committed: '#059669',

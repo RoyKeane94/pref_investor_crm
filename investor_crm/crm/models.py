@@ -34,6 +34,7 @@ class Investor(models.Model):
         ('confirmed_fund_iii', 'Confirmed for Fund III'),
         ('other', 'Other'),
         ('confirmed', 'Revisit'),
+        ('dead', 'Dead'),
     ]
 
     TYPE_CHOICES = [

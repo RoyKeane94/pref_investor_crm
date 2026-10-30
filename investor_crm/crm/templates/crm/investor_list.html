@@ -8,7 +8,7 @@
 
   <section class="mb-4 text-body-sm">
     <div class="rounded-card border border-grey-border bg-white overflow-hidden">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-grey-border">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-grey-border">
         {# Confirmed — SMA / Fund III / Feeder #}
         <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem]">
           <div class="text-field-label uppercase tracking-wide text-forest w-full text-center">Confirmed</div>
@@ -61,6 +61,14 @@
           <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
           <div class="flex-1 flex items-end justify-center w-full min-h-0">
             <span class="text-page-title tabular-nums leading-none {% if stats.confirmed %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.confirmed|default:0|intcomma }}</span>
+          </div>
+        </div>
+        {# Dead #}
+        <div class="px-4 py-4 sm:px-5 sm:py-5 flex flex-col min-h-[8.5rem] text-center">
+          <div class="text-field-label uppercase tracking-wide text-grey w-full text-center">Dead</div>
+          <div class="h-px bg-grey-border w-full my-3 shrink-0" aria-hidden="true"></div>
+          <div class="flex-1 flex items-end justify-center w-full min-h-0">
+            <span class="text-page-title tabular-nums leading-none {% if stats.dead %}text-navy{% else %}text-grey-darker/45{% endif %}">{{ stats.dead|default:0|intcomma }}</span>
           </div>
         </div>
       </div>

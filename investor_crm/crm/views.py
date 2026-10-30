@@ -189,6 +189,11 @@ def _order_investor_queryset(qs, sort: str, sort_dir: str):
             default=z,
             output_field=int_out,
         ),
+        _sb8=Case(
+            When(statuses__contains=['dead'], then=Value(8)),
+            default=z,
+            output_field=int_out,
+        ),
     ).annotate(
         _status_bucket=Least(
             F('_sb0'),
@@ -199,6 +204,7 @@ def _order_investor_queryset(qs, sort: str, sort_dir: str):
             F('_sb5'),
             F('_sb6'),
             F('_sb7'),
+            F('_sb8'),
         )
     )
     name_order = 'name' if sort_dir == 'asc' else '-name'
@@ -381,6 +387,7 @@ def investor_list(request: HttpRequest) -> HttpResponse:
         ),
         other=Count('id', filter=Q(statuses__contains=['other'])),
         confirmed=Count('id', filter=Q(statuses__contains=['confirmed'])),
+        dead=Count('id', filter=Q(statuses__contains=['dead'])),
     )
 
     responsibilities = Responsibility.objects.all()
