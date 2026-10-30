@@ -7,13 +7,11 @@
 <div class="space-y-6">
   <div>
     <h1 class="text-page-title text-navy">Agent findings</h1>
+    {% if show_add_finding %}
     <p class="text-body-sm text-grey mt-1">
-      {% if show_add_finding %}
-        Log findings below — news, personnel, investments, notes, and flags (look into / fit). Include the source/event date when known.
-      {% else %}
-        Review agent findings by investor. Search, filter, and sort the table; open an investor for the full CRM record.
-      {% endif %}
+      Log findings below — news, personnel, investments, notes, and flags (look into / fit). Include the source/event date when known.
     </p>
+    {% endif %}
   </div>
 
   {% if messages %}
@@ -284,17 +282,10 @@
             <option value="name" {% if sort == 'name' %}selected{% endif %}>Investor name</option>
           </select>
         </div>
-        <div>
-          <label class="block text-field-label uppercase text-grey mb-1" for="agents-sort-dir">Order</label>
-          <select id="agents-sort-dir" name="sort_dir" class="border border-grey-border rounded-card px-3 py-2 bg-white text-navy">
-            <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>Descending</option>
-            <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>Ascending</option>
-          </select>
-        </div>
         <button type="submit" class="px-3 py-2 rounded-badge border border-grey-border text-navy hover:bg-grey-hover">
           Apply
         </button>
-        {% if search or filter_investor or filter_type or sort != 'updated' or sort_dir != 'desc' %}
+        {% if search or filter_investor or filter_type or sort != 'updated' %}
           <a href="{% url 'crm:agents' %}" class="px-3 py-2 rounded-badge text-grey hover:text-navy">Clear</a>
         {% endif %}
       </form>

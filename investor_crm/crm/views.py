@@ -1259,11 +1259,10 @@ def _agents_page_context(
     investor_id = (request.GET.get('investor') or '').strip()
     note_type = (request.GET.get('type') or '').strip()
     sort = (request.GET.get('sort') or 'updated').strip()
-    sort_dir = (request.GET.get('sort_dir') or 'desc').strip().lower()
     if sort not in ('name', 'updated'):
         sort = 'updated'
-    if sort_dir not in ('asc', 'desc'):
-        sort_dir = 'desc'
+    # Fixed directions: newest first, or A–Z by name.
+    sort_dir = 'asc' if sort == 'name' else 'desc'
 
     investors_qs = (
         Investor.objects.filter(agent_notes__isnull=False)
@@ -1298,8 +1297,6 @@ def _agents_page_context(
         filter_params['type'] = note_type
     if sort != 'updated':
         filter_params['sort'] = sort
-    if not (sort == 'updated' and sort_dir == 'desc'):
-        filter_params['sort_dir'] = sort_dir
     list_query_string = urlencode(filter_params)
 
     is_agent = is_agent_user(request.user)
