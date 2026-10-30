@@ -547,7 +547,7 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             'New role / organisation'
         )
         self.fields['title'].widget.attrs['placeholder'] = (
-            'e.g. Appoints new CIO / Commits to Fund X'
+            'e.g. Appoints new CIO / Commits to Fund X / Worth a closer look'
         )
 
     def clean(self) -> dict[str, Any]:
@@ -569,5 +569,13 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
             ).strip():
                 self.add_error(
                     'title', 'Enter a label or detail for the investment.'
+                )
+        elif note_type == 'flag':
+            if not (cleaned.get('title') or '').strip() and not (
+                cleaned.get('body') or ''
+            ).strip():
+                self.add_error(
+                    'title',
+                    'Explain why the team should look into this investor.',
                 )
         return cleaned

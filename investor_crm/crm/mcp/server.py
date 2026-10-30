@@ -124,9 +124,10 @@ async def list_findings(
     name='add_finding',
     description=(
         'Create a finding for an investor. Types: news, person_change, '
-        'investment. News requires source_url. Personnel changes require person; '
-        'optional from/to (moved_from/moved_to), event_date (YYYY-MM-DD), '
-        'confidence (low|medium|high).'
+        'investment, flag. Use flag when the team should look into this investor '
+        '(headline/detail = why). News requires source_url. Personnel changes '
+        'require person; optional from/to (moved_from/moved_to), event_date '
+        '(YYYY-MM-DD), confidence (low|medium|high).'
     ),
 )
 async def add_finding(

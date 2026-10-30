@@ -58,13 +58,16 @@
 
       <div x-show="noteType !== 'person_change'" x-cloak class="space-y-3">
         <div>
-          <label class="block text-field-label uppercase text-grey mb-1">{{ form.title.label }}</label>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            <span x-show="noteType === 'flag'">Why look into this</span>
+            <span x-show="noteType !== 'flag'">{{ form.title.label }}</span>
+          </label>
           {{ form.title }}
           {% for error in form.title.errors %}
             <p class="text-xs text-danger mt-1">{{ error }}</p>
           {% endfor %}
         </div>
-        <div>
+        <div x-show="noteType !== 'flag'">
           <label class="block text-field-label uppercase text-grey mb-1">{{ form.link.label }}</label>
           {{ form.link }}
           {% for error in form.link.errors %}

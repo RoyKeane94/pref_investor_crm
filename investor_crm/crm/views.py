@@ -1221,6 +1221,7 @@ def _agent_rows_by_investor(
                 'news': [],
                 'person_changes': [],
                 'investments': [],
+                'flags': [],
                 'latest_at': note.created_at,
                 'notes': [],
             }
@@ -1234,6 +1235,8 @@ def _agent_rows_by_investor(
             current['person_changes'].append(note)
         elif note.note_type == 'investment':
             current['investments'].append(note)
+        elif note.note_type == 'flag':
+            current['flags'].append(note)
     rows.sort(key=lambda r: r['latest_at'], reverse=True)
     return rows
 

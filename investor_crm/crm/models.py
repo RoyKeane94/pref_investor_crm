@@ -365,6 +365,7 @@ class AgentNote(models.Model):
         ('news', 'News'),
         ('person_change', 'Personnel change'),
         ('investment', 'Investment'),
+        ('flag', 'Flag for review'),
     ]
     CONFIDENCE_CHOICES = [
         ('low', 'Low'),
@@ -433,6 +434,12 @@ class AgentNote(models.Model):
             frm = (self.moved_from or '').strip() or '—'
             to = (self.moved_to or '').strip() or '—'
             return f'{name}: {frm} → {to}'
+        if self.note_type == 'flag':
+            return (
+                (self.title or '').strip()
+                or (self.body or '').strip()
+                or 'Needs review'
+            )
         return (self.title or '').strip() or (self.body or '').strip() or '—'
 
 

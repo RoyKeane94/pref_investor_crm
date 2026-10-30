@@ -82,6 +82,11 @@ def _validate_finding_fields(
             raise ValueError('source_url is required for news findings.')
     if note_type == 'investment' and not headline.strip() and not detail.strip():
         raise ValueError('headline or detail is required for investment findings.')
+    if note_type == 'flag' and not headline.strip() and not detail.strip():
+        raise ValueError(
+            'headline or detail is required for flag findings '
+            '(why the team should look into this investor).'
+        )
 
 
 def search_investors(

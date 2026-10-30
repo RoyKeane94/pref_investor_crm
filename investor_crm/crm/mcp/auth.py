@@ -19,8 +19,10 @@ _current_agent_user_id: ContextVar[int | None] = ContextVar(
 )
 
 # Claude custom connectors sometimes fail to attach Authorization; accept these too.
+# x-auth-token is in Claude's built-in request-header name list.
 _ALT_TOKEN_HEADERS = (
     'x-api-key',
+    'x-auth-token',
     'x-mcp-token',
     'x-agent-api-token',
 )

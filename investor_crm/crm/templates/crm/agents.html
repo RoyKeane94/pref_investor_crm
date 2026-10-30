@@ -8,7 +8,7 @@
   <div>
     <h1 class="text-page-title text-navy">Agent findings</h1>
     <p class="text-body-sm text-grey mt-1">
-      Findings are linked to CRM investors and reviewed in the table below — news (with source link), personnel changes, and investments.
+      Findings are linked to CRM investors and reviewed in the table below — news (with source link), personnel changes, investments, and flags when an agent wants the team to look into an investor.
     </p>
   </div>
 
@@ -41,9 +41,13 @@
       <div>
         <div class="text-field-label uppercase text-grey mb-1">Claude request headers (try in order)</div>
         <ol class="list-decimal list-inside space-y-1 text-navy">
-          <li><code class="text-body-sm">Authorization</code> = <code class="text-body-sm">Bearer agt_…</code> (include the word Bearer and a space)</li>
-          <li>If that fails: <code class="text-body-sm">X-Api-Key</code> = <code class="text-body-sm">agt_…</code> (token only, no Bearer)</li>
+          <li><code class="text-body-sm">authorization</code> = <code class="text-body-sm">Bearer agt_…</code> (include Bearer and a space; Claude does not add it)</li>
+          <li>If that fails: <code class="text-body-sm">x-api-key</code> = <code class="text-body-sm">agt_…</code> (token only, no Bearer)</li>
         </ol>
+        <p class="text-body-sm text-grey mt-2">
+          Use auth mode <span class="text-navy">No sign-in</span>. Do not use OAuth / Sign in — that ignores a typed Bearer header and Claude then probes
+          <code class="text-body-sm">/.well-known/oauth-*</code> (404s in logs).
+        </p>
       </div>
     </div>
 
@@ -182,13 +186,16 @@
 
       <div x-show="noteType !== 'person_change'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-field-label uppercase text-grey mb-1">{{ form.title.label }}</label>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            <span x-show="noteType === 'flag'">Why look into this</span>
+            <span x-show="noteType !== 'flag'">{{ form.title.label }}</span>
+          </label>
           {{ form.title }}
           {% for error in form.title.errors %}
             <p class="text-xs text-danger mt-1">{{ error }}</p>
           {% endfor %}
         </div>
-        <div>
+        <div x-show="noteType !== 'flag'">
           <label class="block text-field-label uppercase text-grey mb-1">
             {{ form.link.label }}
             <span x-show="noteType === 'news'" class="normal-case text-grey">(required)</span>
@@ -236,10 +243,11 @@
       <table class="min-w-full text-left text-body-sm">
         <thead class="bg-grey-card text-table-header uppercase text-grey-dark">
           <tr>
-            <th class="px-4 py-2 w-[18%]">Investor</th>
-            <th class="px-4 py-2 w-[27%]">News</th>
-            <th class="px-4 py-2 w-[27%]">Personnel changes</th>
-            <th class="px-4 py-2 w-[28%]">Investments</th>
+            <th class="px-4 py-2 w-[16%]">Investor</th>
+            <th class="px-4 py-2 w-[18%]">Flagged</th>
+            <th class="px-4 py-2 w-[22%]">News</th>
+            <th class="px-4 py-2 w-[22%]">Personnel changes</th>
+            <th class="px-4 py-2 w-[22%]">Investments</th>
           </tr>
         </thead>
         <tbody>
@@ -249,7 +257,45 @@
                 <a href="{% url 'crm:investor_detail' row.investor.pk %}" class="text-navy font-medium hover:underline">
                   {{ row.investor.name }}
                 </a>
+                {% if row.flags %}
+                  <div class="mt-1">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-reminder-overdue-bg text-reminder-overdue border border-reminder-overdue/20 text-table-header font-medium">
+                      Look into
+                    </span>
+                  </div>
+                {% endif %}
                 <div class="text-grey mt-1">Updated {{ row.latest_at|date:"j M Y" }}</div>
+              </td>
+              <td class="px-4 py-3">
+                {% if row.flags %}
+                  <ul class="space-y-2">
+                    {% for note in row.flags %}
+                      <li>
+                        <div class="text-navy">
+                          {% if note.title %}{{ note.title }}{% elif note.body %}{{ note.body|truncatechars:120 }}{% else %}Needs review{% endif %}
+                        </div>
+                        {% if note.body and note.title %}
+                          <div class="text-grey mt-0.5">{{ note.body|truncatechars:160 }}</div>
+                        {% endif %}
+                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                          {% if can_write or note.author_id == user.id %}
+                            <button type="button" class="text-grey hover:text-accent text-table-header"
+                                    hx-get="{% url 'crm:agent_note_edit' note.pk %}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">Edit</button>
+                            <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline"
+                                  onsubmit="return confirm('Clear this flag?');">
+                              {% csrf_token %}
+                              <button type="submit" class="text-grey hover:text-danger text-table-header">Clear</button>
+                            </form>
+                          {% endif %}
+                        </div>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <span class="text-grey">—</span>
+                {% endif %}
               </td>
               <td class="px-4 py-3">
                 {% if row.news %}
@@ -363,8 +409,8 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="px-4 py-6 text-center text-grey">
-                No findings yet. Add news, personnel changes, or investments above.
+              <td colspan="5" class="px-4 py-6 text-center text-grey">
+                No findings yet. Add news, personnel changes, investments, or flags above.
               </td>
             </tr>
           {% endfor %}
