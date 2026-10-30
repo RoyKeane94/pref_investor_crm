@@ -6,3 +6,5 @@ __pycache__/
 venv/
 .env
 *.sqlite3
+# Cursor local rules / IDE
+.cursor/
