@@ -8,7 +8,7 @@
   <div>
     <h1 class="text-page-title text-navy">Agent findings</h1>
     <p class="text-body-sm text-grey mt-1">
-      Findings are linked to CRM investors and reviewed in the table below — news, personnel, investments, notes, flags (look into / fit), and checked. Include the source/event date when known.
+      Findings are linked to CRM investors and reviewed in the table below — news, personnel, investments, notes, and flags (look into / fit). Include the source/event date when known.
     </p>
   </div>
 
@@ -259,14 +259,13 @@
       <table class="min-w-full text-left text-body-sm">
         <thead class="bg-grey-card text-table-header uppercase text-grey-dark">
           <tr>
-            <th class="px-3 py-2">Investor</th>
-            <th class="px-3 py-2">Flagged</th>
-            <th class="px-3 py-2">Fit</th>
-            <th class="px-3 py-2">News</th>
-            <th class="px-3 py-2">Personnel</th>
-            <th class="px-3 py-2">Investments</th>
-            <th class="px-3 py-2">Checked</th>
-            <th class="px-3 py-2">Notes</th>
+            <th class="px-3 py-2 w-[12%]">Investor</th>
+            <th class="px-3 py-2 w-[12%]">Flagged</th>
+            <th class="px-3 py-2 w-[12%]">Fit</th>
+            <th class="px-3 py-2 w-[14%]">News</th>
+            <th class="px-3 py-2 w-[12%]">Personnel</th>
+            <th class="px-3 py-2 w-[12%]">Investments</th>
+            <th class="px-3 py-2 w-[26%]">Notes</th>
           </tr>
         </thead>
         <tbody>
@@ -285,11 +284,6 @@
                   {% if row.fit_flags %}
                     <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium">
                       Fit
-                    </span>
-                  {% endif %}
-                  {% if row.checked %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-grey-card text-navy border border-grey-border text-table-header font-medium">
-                      Checked
                     </span>
                   {% endif %}
                 </div>
@@ -396,26 +390,7 @@
                   <span class="text-grey">—</span>
                 {% endif %}
               </td>
-              <td class="px-3 py-3">
-                {% if row.checked %}
-                  <ul class="space-y-2">
-                    {% for note in row.checked %}
-                      <li>
-                        <div class="text-navy font-medium">
-                          {% if note.title %}{{ note.title }}{% else %}Checked{% endif %}
-                        </div>
-                        {% if note.body %}
-                          <div class="text-grey mt-0.5">{{ note.body|truncatechars:160 }}</div>
-                        {% endif %}
-                        {% include "crm/partials/agent_note_item_meta.html" with note=note %}
-                      </li>
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-grey">—</span>
-                {% endif %}
-              </td>
-              <td class="px-3 py-3">
+              <td class="px-3 py-3 min-w-[16rem]">
                 {% if row.general_notes %}
                   <ul class="space-y-2">
                     {% for note in row.general_notes %}
@@ -423,8 +398,8 @@
                         {% if note.title %}
                           <div class="text-navy font-medium">{{ note.title }}</div>
                         {% endif %}
-                        <div class="{% if note.title %}text-grey mt-0.5{% else %}text-navy{% endif %}">
-                          {% if note.body %}{{ note.body|truncatechars:200 }}{% elif not note.title %}—{% endif %}
+                        <div class="{% if note.title %}text-grey mt-0.5{% else %}text-navy{% endif %} whitespace-pre-wrap">
+                          {% if note.body %}{{ note.body|truncatechars:500 }}{% elif not note.title %}—{% endif %}
                         </div>
                         {% include "crm/partials/agent_note_item_meta.html" with note=note %}
                       </li>
@@ -437,7 +412,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="px-4 py-6 text-center text-grey">
+              <td colspan="7" class="px-4 py-6 text-center text-grey">
                 No findings yet. Add findings above.
               </td>
             </tr>

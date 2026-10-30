@@ -529,6 +529,10 @@ class AgentNoteForm(TailwindFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['investor'].queryset = Investor.objects.order_by('name')
         self.fields['investor'].empty_label = 'Select investor…'
+        # "checked" is MCP-only progress tracking — not shown on the agents board.
+        self.fields['note_type'].choices = [
+            c for c in AgentNote.NOTE_TYPE_CHOICES if c[0] != 'checked'
+        ]
         for name in (
             'title',
             'body',
