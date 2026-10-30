@@ -145,6 +145,13 @@ class Contact(models.Model):
     role = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
+    is_ex = models.BooleanField(
+        default=False,
+        help_text='Former contact; hidden from active contact pickers.',
+    )
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self) -> str:
         return self.name

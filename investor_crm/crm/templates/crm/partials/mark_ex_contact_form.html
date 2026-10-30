@@ -1,0 +1,72 @@
+{% load crm_tags %}
+<div class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50">
+  <div
+    class="bg-white rounded-modal shadow-xl w-full max-w-lg p-6"
+    x-data="{ person: '{{ form.person.value|default_if_none:''|escapejs }}' }"
+    @change="if ($event.target && $event.target.name === 'person') person = $event.target.value">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-heading text-navy">Mark as Ex Contact</h2>
+      <button
+        type="button"
+        class="text-grey text-body-sm"
+        onclick="document.getElementById('modal-container').innerHTML=''">
+        ×
+      </button>
+    </div>
+    <form
+      method="post"
+      action="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-post="{% if post_url %}{{ post_url }}{% endif %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="space-y-4 text-body-sm">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <div>
+        <label class="block text-field-label uppercase text-grey mb-1">
+          {{ form.person.label }}
+        </label>
+        {% include "crm/partials/custom_select.html" with field=form.person %}
+        {% for error in form.person.errors %}
+          <p class="text-xs text-danger mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div x-show="person === 'principal'" x-cloak class="space-y-2">
+        <p class="text-body-sm text-grey bg-grey-card border border-grey-border rounded-card px-3 py-2">
+          The principal contact is being marked as an ex contact.
+          Choose a replacement from the other contacts below.
+        </p>
+        {% if not has_active_other_contacts %}
+          <p class="text-xs text-danger">
+            Add another contact first, then mark the principal as an ex contact.
+          </p>
+        {% endif %}
+        <div>
+          <label class="block text-field-label uppercase text-grey mb-1">
+            {{ form.replacement.label }}
+          </label>
+          {% include "crm/partials/custom_select.html" with field=form.replacement %}
+          {% for error in form.replacement.errors %}
+            <p class="text-xs text-danger mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-4">
+        <button
+          type="button"
+          class="px-3 py-2 rounded-badge border border-grey-border text-grey text-body-sm"
+          onclick="document.getElementById('modal-container').innerHTML=''">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-badge bg-navy text-white text-body-sm">
+          Mark as ex
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -27,6 +27,11 @@ urlpatterns = [
         name='contact_delete',
     ),
     path(
+        'investors/<int:pk>/contacts/mark-ex/',
+        views.contact_mark_ex,
+        name='contact_mark_ex',
+    ),
+    path(
         'investors/<int:pk>/calls/create/',
         views.calllog_create,
         name='calllog_create',

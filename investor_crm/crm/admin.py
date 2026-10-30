@@ -49,7 +49,8 @@ class InvestorAdmin(admin.ModelAdmin):
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('name', 'investor', 'role', 'email')
+    list_display = ('name', 'investor', 'role', 'email', 'is_ex')
+    list_filter = ('is_ex',)
     search_fields = ('name', 'email', 'investor__name')
 
 

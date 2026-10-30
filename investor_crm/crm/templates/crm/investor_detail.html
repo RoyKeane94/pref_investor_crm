@@ -206,7 +206,15 @@
             <tr x-show="showAll || {{ forloop.counter }} <= 5"
                 class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
               <td class="py-1 text-navy">{{ contact.name }}</td>
-              <td class="py-1 text-right">
+              <td class="py-1 text-right space-x-2">
+                <button
+                  type="button"
+                  class="text-body-sm text-grey hover:text-accent"
+                  hx-get="{% url 'crm:contact_mark_ex' investor.pk %}?person=contact:{{ contact.pk }}"
+                  hx-target="#modal-container"
+                  hx-swap="innerHTML">
+                  Mark as ex
+                </button>
                 <form method="post" action="{% url 'crm:contact_delete' investor.pk contact.pk %}" hx-post="{% url 'crm:contact_delete' investor.pk contact.pk %}" hx-swap="none" hx-confirm="Delete {{ contact.name }}?" class="inline">
                   {% csrf_token %}
                   <button type="submit" class="text-body-sm text-grey hover:text-danger">Delete</button>
@@ -224,6 +232,48 @@
                 <button type="button" @click="showAll = true"
                         class="text-body-sm text-accent hover:underline font-medium">
                   Show all ({{ contacts|length }})
+                </button>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-heading text-navy">Ex Contacts</div>
+        <button
+          class="px-2 py-1 rounded-badge border border-grey-border text-grey text-body-sm"
+          hx-get="{% url 'crm:contact_mark_ex' investor.pk %}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML">
+          Mark as ex
+        </button>
+      </div>
+      <table class="w-full text-left text-body-sm">
+        <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+          <tr>
+            <th class="py-1.5 px-1">Name</th>
+          </tr>
+        </thead>
+        <tbody class="text-grey">
+          {% for contact in ex_contacts %}
+            <tr x-show="showAll || {{ forloop.counter }} <= 5"
+                class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+              <td class="py-1 text-navy">{{ contact.name }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td class="py-2 text-grey">No ex contacts.</td>
+            </tr>
+          {% endfor %}
+          {% if ex_contacts|length > 5 %}
+            <tr x-show="!showAll" class="border-t border-grey-border">
+              <td class="py-2">
+                <button type="button" @click="showAll = true"
+                        class="text-body-sm text-accent hover:underline font-medium">
+                  Show all ({{ ex_contacts|length }})
                 </button>
               </td>
             </tr>

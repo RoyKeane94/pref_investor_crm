@@ -214,9 +214,88 @@ def _with_choices_for_investor(investor: Investor) -> Iterable[Tuple[str, str]]:
     choices: list[Tuple[str, str]] = []
     if investor.principal_contact:
         choices.append(('principal', investor.principal_contact))
-    for contact in investor.contacts.all():
+    for contact in investor.contacts.filter(is_ex=False):
         choices.append((f'contact:{contact.pk}', contact.name))
     return choices
+
+
+class MarkExContactForm(TailwindFormMixin, forms.Form):
+    """Move the principal or an other contact into Ex Contacts."""
+
+    person = forms.ChoiceField(label='Contact')
+    replacement = forms.ChoiceField(
+        label='New principal contact',
+        required=False,
+    )
+
+    def __init__(self, *args: Any, investor: Investor, **kwargs: Any) -> None:
+        self.investor = investor
+        super().__init__(*args, **kwargs)
+        active = list(investor.contacts.filter(is_ex=False))
+        person_choices: list[Tuple[str, str]] = [('', 'Select...')]
+        if investor.principal_contact:
+            person_choices.append(
+                ('principal', f'{investor.principal_contact} (principal)')
+            )
+        for contact in active:
+            person_choices.append((f'contact:{contact.pk}', contact.name))
+        self.fields['person'].choices = person_choices
+
+        replacement_choices: list[Tuple[str, str]] = [('', 'Select...')]
+        for contact in active:
+            replacement_choices.append((f'contact:{contact.pk}', contact.name))
+        self.fields['replacement'].choices = replacement_choices
+
+    def clean(self) -> dict[str, Any]:
+        cleaned = super().clean()
+        person = cleaned.get('person') or ''
+        replacement = cleaned.get('replacement') or ''
+        if person == 'principal':
+            if not replacement:
+                self.add_error(
+                    'replacement',
+                    'Choose a replacement principal contact before marking '
+                    'the current principal as an ex contact.',
+                )
+            elif not self.investor.contacts.filter(
+                is_ex=False, pk=replacement.split(':', 1)[-1]
+            ).exists():
+                self.add_error(
+                    'replacement',
+                    'Add another contact first, then choose them as the new principal.',
+                )
+            elif replacement == 'principal':
+                self.add_error('replacement', 'Choose a different contact.')
+        return cleaned
+
+    def save(self) -> None:
+        person = self.cleaned_data['person']
+        if person == 'principal':
+            old_name = (self.investor.principal_contact or '').strip()
+            replacement = self.cleaned_data['replacement']
+            contact_id = replacement.split(':', 1)[1]
+            new_principal = self.investor.contacts.get(pk=contact_id, is_ex=False)
+            if old_name:
+                existing_ex = self.investor.contacts.filter(
+                    name=old_name, is_ex=True
+                ).first()
+                if not existing_ex:
+                    Contact.objects.create(
+                        investor=self.investor,
+                        name=old_name,
+                        is_ex=True,
+                    )
+            self.investor.principal_contact = new_principal.name
+            self.investor.save(update_fields=['principal_contact', 'updated_at'])
+            # Promoted contact becomes the principal, not an "other" contact.
+            new_principal.delete()
+            return
+
+        if person.startswith('contact:'):
+            contact_id = person.split(':', 1)[1]
+            contact = self.investor.contacts.get(pk=contact_id, is_ex=False)
+            contact.is_ex = True
+            contact.save(update_fields=['is_ex'])
 
 
 class MeetingLogForm(TailwindFormMixin, forms.ModelForm):

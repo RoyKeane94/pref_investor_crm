@@ -18,6 +18,7 @@ from .forms import (
     CallLogForm,
     CoInvestmentForm,
     ContactForm,
+    MarkExContactForm,
     EmailLogForm,
     InfoLinkForm,
     InvestorAboutForm,
@@ -470,8 +471,10 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
     )
 
     reminders = investor.open_reminders
-    contacts = list(investor.contacts.all())
-    contact_by_pk = {c.pk: c for c in contacts}
+    all_contacts = list(investor.contacts.all())
+    contacts = [c for c in all_contacts if not c.is_ex]
+    ex_contacts = [c for c in all_contacts if c.is_ex]
+    contact_by_pk = {c.pk: c for c in all_contacts}
     meeting_logs = list(investor.meeting_logs.all())
     call_logs = list(investor.call_logs.all())
     email_logs = list(investor.email_logs.all())
@@ -573,6 +576,7 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
         'investor': investor,
         'reminders': reminders,
         'contacts': contacts,
+        'ex_contacts': ex_contacts,
         'meeting_logs': meeting_logs,
         'call_logs': call_logs,
         'email_logs': email_logs,
@@ -708,6 +712,36 @@ def contact_delete(
         response['HX-Trigger'] = 'contactsChanged'
         return response
     return HttpResponseBadRequest('Invalid request')
+
+
+@login_required
+def contact_mark_ex(request: HttpRequest, pk: int) -> HttpResponse:
+    investor = get_object_or_404(Investor, pk=pk)
+    if request.method == 'POST':
+        form = MarkExContactForm(request.POST, investor=investor)
+        if form.is_valid():
+            form.save()
+            response = HttpResponse('', content_type='text/html')
+            response['HX-Trigger'] = 'contactsChanged'
+            return response
+    else:
+        initial = {}
+        preselect = request.GET.get('person')
+        if preselect:
+            initial['person'] = preselect
+        form = MarkExContactForm(investor=investor, initial=initial)
+    return render(
+        request,
+        'crm/partials/mark_ex_contact_form.html',
+        {
+            'form': form,
+            'investor': investor,
+            'post_url': reverse('crm:contact_mark_ex', args=[investor.pk]),
+            'has_active_other_contacts': investor.contacts.filter(
+                is_ex=False
+            ).exists(),
+        },
+    )
 
 
 @login_required
