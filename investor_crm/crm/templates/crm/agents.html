@@ -27,15 +27,24 @@
     <div>
       <h2 class="text-heading text-navy">Claude / MCP access</h2>
       <p class="text-body-sm text-grey mt-1">
-        Create a bearer token while logged in as this agent account. Use it in Claude as
-        <span class="text-navy">Authorization: Bearer &lt;token&gt;</span> against the MCP URL below.
+        Create a token while logged in as this agent account. In Claude use
+        <span class="text-navy">No sign in</span>, then add a request header (not OAuth).
         Tokens only work for agent (Read Only) accounts.
       </p>
     </div>
 
-    <div class="text-body-sm">
-      <div class="text-field-label uppercase text-grey mb-1">MCP URL</div>
-      <code class="block break-all rounded-card border border-grey-border bg-grey-card px-3 py-2 text-navy">{{ mcp_public_url }}</code>
+    <div class="text-body-sm space-y-3">
+      <div>
+        <div class="text-field-label uppercase text-grey mb-1">MCP URL</div>
+        <code class="block break-all rounded-card border border-grey-border bg-grey-card px-3 py-2 text-navy">{{ mcp_public_url }}</code>
+      </div>
+      <div>
+        <div class="text-field-label uppercase text-grey mb-1">Claude request headers (try in order)</div>
+        <ol class="list-decimal list-inside space-y-1 text-navy">
+          <li><code class="text-body-sm">Authorization</code> = <code class="text-body-sm">Bearer agt_…</code> (include the word Bearer and a space)</li>
+          <li>If that fails: <code class="text-body-sm">X-Api-Key</code> = <code class="text-body-sm">agt_…</code> (token only, no Bearer)</li>
+        </ol>
+      </div>
     </div>
 
     {% if mcp_new_token %}

@@ -18,6 +18,13 @@ _current_agent_user_id: ContextVar[int | None] = ContextVar(
     'mcp_agent_user_id', default=None
 )
 
+# Claude custom connectors sometimes fail to attach Authorization; accept these too.
+_ALT_TOKEN_HEADERS = (
+    'x-api-key',
+    'x-mcp-token',
+    'x-agent-api-token',
+)
+
 
 def get_current_agent_user_id() -> int | None:
     return _current_agent_user_id.get()
@@ -29,6 +36,9 @@ def lookup_agent_user_id(raw_token: str) -> tuple[int | None, str]:
     try:
         if not raw_token:
             return None, 'missing_bearer_token'
+        # Allow pasting "Bearer agt_…" into an API-key field by mistake.
+        if raw_token.lower().startswith('bearer '):
+            raw_token = raw_token[7:].strip()
         key_hash = AgentApiToken.hash_key(raw_token)
         api_token = (
             AgentApiToken.objects.select_related('user')
@@ -43,24 +53,42 @@ def lookup_agent_user_id(raw_token: str) -> tuple[int | None, str]:
         if not user.is_active:
             return None, f'inactive_user id={user.pk}'
         if not is_agent_user(user):
-            return None, f'not_agent_user id={user.pk} email={user.email or user.username}'
+            return None, (
+                f'not_agent_user id={user.pk} '
+                f'email={user.email or user.username}'
+            )
         api_token.mark_used()
         return user.pk, ''
     finally:
         close_old_connections()
 
 
-def _bearer_from_scope(scope: Scope) -> tuple[str, str]:
-    """Return (raw_token, parse_note)."""
+def _headers_map(scope: Scope) -> dict[str, str]:
+    out: dict[str, str] = {}
     for key, value in scope.get('headers') or []:
-        if key.decode('latin-1').lower() == 'authorization':
-            auth = value.decode('latin-1')
-            scheme, _, token = auth.partition(' ')
-            if scheme.lower() == 'bearer' and token.strip():
-                return token.strip(), ''
-            if not scheme:
-                return '', 'empty_authorization_header'
-            return '', f'non_bearer_scheme scheme={scheme!r}'
+        out[key.decode('latin-1').lower()] = value.decode('latin-1')
+    return out
+
+
+def _token_from_headers(headers: dict[str, str]) -> tuple[str, str]:
+    """Return (raw_token, parse_note)."""
+    auth = headers.get('authorization')
+    if auth is not None:
+        scheme, _, token = auth.partition(' ')
+        if scheme.lower() == 'bearer' and token.strip():
+            return token.strip(), 'authorization_bearer'
+        if scheme.lower() == 'bearer':
+            return '', 'empty_bearer_token'
+        # Some UIs put the raw token in Authorization with no "Bearer ".
+        if auth.strip().startswith('agt_'):
+            return auth.strip(), 'authorization_raw_token'
+        return '', f'non_bearer_scheme scheme={scheme!r}'
+
+    for name in _ALT_TOKEN_HEADERS:
+        value = (headers.get(name) or '').strip()
+        if value:
+            return value, f'alt_header={name}'
+
     return '', 'no_authorization_header'
 
 
@@ -73,7 +101,7 @@ def _request_path(scope: Scope) -> str:
 
 
 class AgentBearerAuthMiddleware:
-    """Require Authorization: Bearer <agent token>; do not advertise OAuth."""
+    """Require agent API token via Authorization or X-Api-Key / X-MCP-Token."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -85,9 +113,12 @@ class AgentBearerAuthMiddleware:
 
         method = scope.get('method', '?')
         path = _request_path(scope)
-        raw, parse_note = _bearer_from_scope(scope)
+        headers = _headers_map(scope)
+        header_names = sorted(headers.keys())
+        raw, parse_note = _token_from_headers(headers)
         user_id = None
         reason = parse_note or 'missing_bearer_token'
+        source = parse_note
         if raw:
             user_id, reason = await sync_to_async(
                 lookup_agent_user_id, thread_sensitive=True
@@ -95,15 +126,16 @@ class AgentBearerAuthMiddleware:
 
         if user_id is None:
             logger.warning(
-                'MCP auth rejected method=%s path=%s reason=%s',
+                'MCP auth rejected method=%s path=%s reason=%s header_names=%s',
                 method,
                 path,
                 reason,
+                header_names,
             )
             body = (
                 b'{"error":"invalid_token",'
                 b'"error_description":"Authentication required. '
-                b'Use Authorization: Bearer <agent API token>."}'
+                b'Send Authorization: Bearer <token> or X-Api-Key: <token>."}'
             )
             # Do not send WWW-Authenticate — Claude treats that as an OAuth
             # challenge and then fails on missing /.well-known/oauth-* routes.
@@ -121,10 +153,11 @@ class AgentBearerAuthMiddleware:
             return
 
         logger.info(
-            'MCP auth ok method=%s path=%s user_id=%s',
+            'MCP auth ok method=%s path=%s user_id=%s source=%s',
             method,
             path,
             user_id,
+            source,
         )
         token = _current_agent_user_id.set(user_id)
         try:
