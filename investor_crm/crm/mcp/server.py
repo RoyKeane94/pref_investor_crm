@@ -4,14 +4,11 @@ from __future__ import annotations
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
-from pydantic import AnyHttpUrl
 
 from mcp.server import MCPServer
-from mcp.server.auth.middleware.auth_context import get_access_token
-from mcp.server.auth.settings import AuthSettings
 from mcp.server.transport_security import TransportSecuritySettings
 
-from crm.mcp.auth import AGENT_SCOPE, AgentTokenVerifier, user_id_from_access_token
+from crm.mcp.auth import AgentBearerAuthMiddleware, get_current_agent_user_id
 from crm.mcp import tools as tool_impl
 
 mcp = MCPServer(
@@ -19,20 +16,13 @@ mcp = MCPServer(
     instructions=(
         'Read-only CRM access for agent accounts, plus create/update/delete '
         'findings the agent authored. Authenticate with '
-        'Authorization: Bearer <agent API token>.'
-    ),
-    token_verifier=AgentTokenVerifier(),
-    auth=AuthSettings(
-        issuer_url=AnyHttpUrl(settings.MCP_PUBLIC_URL),
-        resource_server_url=AnyHttpUrl(settings.MCP_PUBLIC_URL),
-        required_scopes=[AGENT_SCOPE],
-        validate_token_resource=False,
+        'Authorization: Bearer <agent API token> (no OAuth).'
     ),
 )
 
 
 def _current_user_id() -> int | None:
-    return user_id_from_access_token(get_access_token())
+    return get_current_agent_user_id()
 
 
 def _transport_security() -> TransportSecuritySettings:
@@ -49,12 +39,15 @@ def _transport_security() -> TransportSecuritySettings:
 
 def build_mcp_http_app():
     """ASGI app for Streamable HTTP. Mount at /mcp with path=/."""
-    return mcp.streamable_http_app(
+    app = mcp.streamable_http_app(
         streamable_http_path='/',
         json_response=True,
         stateless_http=True,
         transport_security=_transport_security(),
     )
+    # Bearer API keys only — avoid MCP OAuth AuthSettings, which makes Claude
+    # probe /.well-known/oauth-* (those routes are not on the Django root).
+    return AgentBearerAuthMiddleware(app)
 
 
 @mcp.tool(
