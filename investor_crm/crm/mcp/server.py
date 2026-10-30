@@ -26,6 +26,12 @@ def _current_user_id() -> int | None:
 
 
 def _transport_security() -> TransportSecuritySettings:
+    # Hosted behind Railway TLS with bearer API keys. DNS-rebinding checks
+    # reject Anthropic/Claude Origin headers and misconfigured ALLOWED_HOSTS,
+    # which shows up as a vague "connection" failure in Claude.
+    if getattr(settings, 'MCP_DISABLE_DNS_REBINDING_PROTECTION', True):
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
     hosts = list(getattr(settings, 'MCP_ALLOWED_HOSTS', None) or [])
     origins = list(getattr(settings, 'MCP_ALLOWED_ORIGINS', None) or [])
     if not hosts:

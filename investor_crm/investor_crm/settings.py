@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -115,11 +116,26 @@ for _host in ALLOWED_HOSTS:
 MCP_ALLOWED_ORIGINS = list(CSRF_TRUSTED_ORIGINS) + [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
+    'https://claude.ai',
+    'https://www.claude.ai',
 ]
 _extra_mcp_origins = os.environ.get('MCP_ALLOWED_ORIGINS', '')
 MCP_ALLOWED_ORIGINS.extend(
     o.strip() for o in _extra_mcp_origins.split(',') if o.strip()
 )
+
+# Default off for Railway-hosted bearer MCP (see crm.mcp.server).
+MCP_DISABLE_DNS_REBINDING_PROTECTION = os.environ.get(
+    'MCP_DISABLE_DNS_REBINDING_PROTECTION', '1'
+).lower() in ('1', 'true', 'yes')
+
+# Also allow Host values derived from CSRF_TRUSTED_ORIGINS / MCP_PUBLIC_URL.
+for _origin in list(CSRF_TRUSTED_ORIGINS) + [MCP_PUBLIC_URL]:
+    _parsed = urlparse(_origin if '://' in _origin else f'https://{_origin}')
+    if _parsed.hostname:
+        MCP_ALLOWED_HOSTS.append(_parsed.hostname)
+        MCP_ALLOWED_HOSTS.append(f'{_parsed.hostname}:*')
+
 
 
 # Database
