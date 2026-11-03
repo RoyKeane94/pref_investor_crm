@@ -329,7 +329,7 @@
                 {% if row.flags %}
                   <ul class="space-y-2">
                     {% for note in row.flags %}
-                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Reason" label_class="text-reminder-overdue" bubble_class="rounded-card border border-reminder-overdue/30 bg-reminder-overdue-bg px-2.5 py-2" empty_fallback="Needs review" clear_confirm="Clear this flag?" clear_label="Clear" %}
+                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Reason" label_class="text-reminder-overdue" bubble_class="rounded-card border border-reminder-overdue/30 bg-reminder-overdue-bg px-3.5 py-3" empty_fallback="Needs review" clear_confirm="Clear this flag?" clear_label="Clear" %}
                     {% endfor %}
                   </ul>
                 {% else %}
@@ -340,7 +340,7 @@
                 {% if row.fit_flags %}
                   <ul class="space-y-2">
                     {% for note in row.fit_flags %}
-                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Fit reason" label_class="text-accent" bubble_class="rounded-card border border-accent/30 bg-accent/10 px-2.5 py-2" empty_fallback="Fit" clear_confirm="Clear this fit flag?" clear_label="Clear" %}
+                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Fit reason" label_class="text-accent" bubble_class="rounded-card border border-accent/30 bg-accent/10 px-3.5 py-3" empty_fallback="Fit" clear_confirm="Clear this fit flag?" clear_label="Clear" %}
                     {% endfor %}
                   </ul>
                 {% else %}
