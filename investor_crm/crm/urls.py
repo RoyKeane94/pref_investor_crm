@@ -137,6 +137,11 @@ urlpatterns = [
     ),
     path('reminders/all/', views.reminders_banner, name='reminders_banner'),
     path('agents/', views.agents_page, name='agents'),
+    path(
+        'agents/investors/<int:pk>/promote-from-other/',
+        views.agent_investor_promote_from_other,
+        name='agent_investor_promote_from_other',
+    ),
     path('agents/notes/create/', views.agent_note_create, name='agent_note_create'),
     path(
         'agents/notes/<int:pk>/edit/',

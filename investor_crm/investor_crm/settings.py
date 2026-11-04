@@ -213,7 +213,15 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
 
 # Production HTTPS hardening (Railway terminates TLS and sets X-Forwarded-Proto).
-if not DEBUG:
+# Defaults to on when DEBUG=False. Set USE_HTTPS=false in local .env so runserver
+# can stay on HTTP while DEBUG remains False.
+_use_https_env = os.environ.get('USE_HTTPS')
+if _use_https_env is not None:
+    USE_HTTPS = _use_https_env.lower() in ('1', 'true', 'yes')
+else:
+    USE_HTTPS = not DEBUG
+
+if USE_HTTPS:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True

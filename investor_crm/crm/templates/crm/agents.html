@@ -322,6 +322,7 @@
                       Fit
                     </span>
                   {% endif %}
+                  {% include "crm/partials/agent_investor_status.html" with investor=row.investor %}
                 </div>
                 <div class="text-grey mt-1">Updated {{ row.latest_at|date:"j M Y" }}</div>
               </td>

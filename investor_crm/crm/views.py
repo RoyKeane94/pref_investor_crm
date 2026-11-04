@@ -1311,6 +1311,11 @@ def _agents_page_context(
         'sort': sort,
         'sort_dir': sort_dir,
         'list_query_string': list_query_string,
+        'status_choices': [
+            (value, label)
+            for value, label in Investor.STATUS_CHOICES
+            if value != 'other'
+        ],
         'investors': Investor.objects.filter(agent_notes__isnull=False)
         .distinct()
         .order_by('name'),
@@ -1340,6 +1345,80 @@ def agents_page(request: HttpRequest) -> HttpResponse:
         'crm/agents.html',
         _agents_page_context(request),
     )
+
+
+STATUS_CHOICE_VALUES = frozenset(value for value, _label in Investor.STATUS_CHOICES)
+
+
+def _agent_status_choices():
+    """Same statuses as Edit Investor, excluding Other (already current)."""
+    return [
+        (value, label)
+        for value, label in Investor.STATUS_CHOICES
+        if value != 'other'
+    ]
+
+
+def _agents_redirect(request: HttpRequest) -> HttpResponse:
+    """Return to the agents board, preserving filters when posted."""
+    qs = (request.POST.get('next') or '').strip().lstrip('?')
+    url = reverse('crm:agents')
+    if qs:
+        return redirect(f'{url}?{qs}')
+    return redirect(url)
+
+
+def _agent_investor_status_response(request: HttpRequest, investor: Investor) -> HttpResponse:
+    return render(
+        request,
+        'crm/partials/agent_investor_status.html',
+        {
+            'investor': investor,
+            'status_choices': _agent_status_choices(),
+        },
+    )
+
+
+@login_required
+@write_required
+def agent_investor_promote_from_other(
+    request: HttpRequest, pk: int
+) -> HttpResponse:
+    """Change an investor from Other to another pipeline status."""
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    if request.method != 'POST':
+        if is_htmx:
+            investor = get_object_or_404(Investor, pk=pk)
+            return _agent_investor_status_response(request, investor)
+        return _agents_redirect(request)
+
+    investor = get_object_or_404(Investor, pk=pk)
+    new_status = (request.POST.get('status') or '').strip()
+    if new_status not in STATUS_CHOICE_VALUES or new_status == 'other':
+        if is_htmx:
+            return _agent_investor_status_response(request, investor)
+        messages.error(request, 'Choose a valid status.')
+        return _agents_redirect(request)
+
+    statuses = list(investor.statuses or [])
+    if 'other' not in statuses:
+        if is_htmx:
+            return _agent_investor_status_response(request, investor)
+        messages.info(request, f'{investor.name} is not marked Other.')
+        return _agents_redirect(request)
+
+    statuses = [s for s in statuses if s != 'other']
+    if new_status not in statuses:
+        statuses.append(new_status)
+    investor.statuses = statuses
+    investor.save(update_fields=['statuses'])
+
+    if is_htmx:
+        return _agent_investor_status_response(request, investor)
+
+    label = dict(Investor.STATUS_CHOICES).get(new_status, new_status)
+    messages.success(request, f'{investor.name} moved to {label}.')
+    return _agents_redirect(request)
 
 
 @login_required

@@ -1,0 +1,83 @@
+{# Investor status badge on agents board. Expects: investor, status_choices; can_write from context. #}
+<span id="agent-status-{{ investor.pk }}" class="inline-flex flex-wrap gap-1 items-center">
+  {% if investor.statuses and "other" in investor.statuses %}
+    {% if can_write %}
+      <span
+        class="relative inline-flex"
+        x-data="{
+          open: false,
+          menuStyle: '',
+          toggle() {
+            this.open = !this.open;
+            if (!this.open) return;
+            this.$nextTick(() => {
+              const r = this.$refs.trigger.getBoundingClientRect();
+              this.menuStyle = 'top:' + (r.bottom + 4) + 'px;left:' + r.left + 'px';
+              if (this.$refs.menu && window.htmx) window.htmx.process(this.$refs.menu);
+            });
+          }
+        }">
+        <button
+          type="button"
+          x-ref="trigger"
+          @click.stop="toggle()"
+          :aria-expanded="open.toString()"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-table-header font-medium hover:bg-grey-hover cursor-pointer">
+          Other
+          <span class="text-[0.65rem] opacity-70" aria-hidden="true">▾</span>
+        </button>
+        <template x-teleport="body">
+          <div
+            x-ref="menu"
+            x-show="open"
+            x-cloak
+            x-transition.opacity.duration.100ms
+            @click.outside="open = false"
+            @keydown.escape.window="if (open) open = false"
+            :style="menuStyle"
+            class="fixed z-50 w-48 max-h-72 overflow-y-auto bg-white border border-grey-border rounded-card shadow-lg py-1"
+            role="listbox"
+            aria-label="Change status">
+            {% for value, label in status_choices %}
+              <button
+                type="button"
+                role="option"
+                class="block w-full text-left px-3 py-1.5 text-body-sm text-navy hover:bg-grey-hover whitespace-nowrap"
+                hx-post="{% url 'crm:agent_investor_promote_from_other' investor.pk %}"
+                hx-vals='{"status": "{{ value }}"}'
+                hx-target="#agent-status-{{ investor.pk }}"
+                hx-swap="outerHTML"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                @click="open = false">
+                {{ label }}
+              </button>
+            {% endfor %}
+          </div>
+        </template>
+      </span>
+    {% else %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-table-header font-medium">
+        Other
+      </span>
+    {% endif %}
+  {% endif %}
+  {% for s in investor.statuses %}
+    {% if s == 'target_sma' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-table-header font-medium">Target for SMA</span>
+    {% elif s == 'target_feeder_fund' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-table-header font-medium">Target for Feeder</span>
+    {% elif s == 'target_fund_iii' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-table-header font-medium">Target for Fund III</span>
+    {% elif s == 'confirmed_sma' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-sma-bg text-status-sma-text border border-status-sma-border text-table-header font-medium">Confirmed for SMA</span>
+    {% elif s == 'confirmed_feeder_fund' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-table-header font-medium">Confirmed for Feeder</span>
+    {% elif s == 'confirmed_fund_iii' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-table-header font-medium">Confirmed for Fund III</span>
+    {% elif s == 'confirmed' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-confirmed-bg text-status-confirmed-text border border-status-confirmed-border text-table-header font-medium">Revisit</span>
+    {% elif s == 'dead' %}
+      <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-dead-bg text-status-dead-text border border-status-dead-border text-table-header font-medium">Dead</span>
+    {% endif %}
+  {% endfor %}
+</span>
