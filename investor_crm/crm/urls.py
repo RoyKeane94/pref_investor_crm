@@ -31,6 +31,16 @@ urlpatterns = [
         name='contact_mark_ex',
     ),
     path(
+        'investors/<int:pk>/intermediary/mark-ex/',
+        views.intermediary_mark_ex,
+        name='intermediary_mark_ex',
+    ),
+    path(
+        'investors/<int:pk>/intermediary/<int:contact_pk>/reinstate/',
+        views.intermediary_reinstate,
+        name='intermediary_reinstate',
+    ),
+    path(
         'investors/<int:pk>/calls/create/',
         views.calllog_create,
         name='calllog_create',

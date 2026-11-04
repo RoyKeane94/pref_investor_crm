@@ -45,6 +45,7 @@ from .models import (
     Contact,
     EmailLog,
     InfoLink,
+    Intermediary,
     Investor,
     MeetingLog,
     Office,
@@ -52,6 +53,8 @@ from .models import (
     Reminder,
     Responsibility,
 )
+
+EX_INTERMEDIARY_ROLE = 'Intermediary'
 from django.contrib.auth.models import User
 
 
@@ -453,7 +456,16 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
     reminders = investor.open_reminders
     all_contacts = list(investor.contacts.all())
     contacts = [c for c in all_contacts if not c.is_ex]
-    ex_contacts = [c for c in all_contacts if c.is_ex]
+    ex_contacts = [
+        c
+        for c in all_contacts
+        if c.is_ex and c.role != EX_INTERMEDIARY_ROLE
+    ]
+    ex_intermediaries = [
+        c
+        for c in all_contacts
+        if c.is_ex and c.role == EX_INTERMEDIARY_ROLE
+    ]
     contact_by_pk = {c.pk: c for c in all_contacts}
     meeting_logs = list(investor.meeting_logs.all())
     call_logs = list(investor.call_logs.all())
@@ -557,6 +569,7 @@ def investor_detail(request: HttpRequest, pk: int) -> HttpResponse:
         'reminders': reminders,
         'contacts': contacts,
         'ex_contacts': ex_contacts,
+        'ex_intermediaries': ex_intermediaries,
         'meeting_logs': meeting_logs,
         'call_logs': call_logs,
         'email_logs': email_logs,
@@ -729,6 +742,97 @@ def contact_mark_ex(request: HttpRequest, pk: int) -> HttpResponse:
             ).exists(),
         },
     )
+
+
+def _archive_intermediary_as_ex(investor: Investor, name: str) -> None:
+    name = (name or '').strip()
+    if not name:
+        return
+    existing_ex = investor.contacts.filter(
+        name=name, is_ex=True, role=EX_INTERMEDIARY_ROLE
+    ).first()
+    if existing_ex:
+        return
+    Contact.objects.create(
+        investor=investor,
+        name=name,
+        role=EX_INTERMEDIARY_ROLE,
+        is_ex=True,
+    )
+
+
+@login_required
+@write_required
+def intermediary_mark_ex(request: HttpRequest, pk: int) -> HttpResponse:
+    """Move the current intermediary firm into Ex Intermediaries and clear it."""
+    investor = get_object_or_404(
+        Investor.objects.select_related('intermediary', 'responsibility'),
+        pk=pk,
+    )
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Invalid request')
+
+    has_intermediary = (
+        investor.responsibility
+        and investor.responsibility.name == 'Intermediary'
+        and investor.intermediary_id
+    )
+    if not has_intermediary:
+        return HttpResponseBadRequest('No intermediary to mark as ex')
+
+    _archive_intermediary_as_ex(investor, investor.intermediary.name)
+
+    investor.intermediary = None
+    investor.responsibility = None
+    investor.save(update_fields=['intermediary', 'responsibility', 'updated_at'])
+
+    response = HttpResponse(status=204)
+    response['HX-Trigger'] = 'contactsChanged, investorDetailChanged'
+    return response
+
+
+@login_required
+@write_required
+def intermediary_reinstate(
+    request: HttpRequest, pk: int, contact_pk: int
+) -> HttpResponse:
+    """Restore an ex intermediary as the investor's current intermediary."""
+    investor = get_object_or_404(
+        Investor.objects.select_related('intermediary', 'responsibility'),
+        pk=pk,
+    )
+    ex_row = get_object_or_404(
+        Contact,
+        pk=contact_pk,
+        investor=investor,
+        is_ex=True,
+        role=EX_INTERMEDIARY_ROLE,
+    )
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Invalid request')
+
+    # If another intermediary is currently active, archive it first.
+    if (
+        investor.responsibility
+        and investor.responsibility.name == 'Intermediary'
+        and investor.intermediary_id
+    ):
+        _archive_intermediary_as_ex(investor, investor.intermediary.name)
+
+    name = (ex_row.name or '').strip()
+    if not name:
+        return HttpResponseBadRequest('Ex intermediary has no name')
+
+    intermediary, _ = Intermediary.objects.get_or_create(name=name)
+    responsibility, _ = Responsibility.objects.get_or_create(name='Intermediary')
+    investor.intermediary = intermediary
+    investor.responsibility = responsibility
+    investor.save(update_fields=['intermediary', 'responsibility', 'updated_at'])
+    ex_row.delete()
+
+    response = HttpResponse(status=204)
+    response['HX-Trigger'] = 'contactsChanged, investorDetailChanged'
+    return response
 
 
 @login_required

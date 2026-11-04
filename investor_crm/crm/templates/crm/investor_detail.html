@@ -77,8 +77,23 @@
           <dt class="text-field-label uppercase text-grey">Office</dt>
           <dd class="text-navy">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</dd>
         </div>
-        <div class="flex justify-between">
-          <dt class="text-field-label uppercase text-grey">Intermediary</dt>
+        <div class="flex justify-between items-center gap-2">
+          <dt class="text-field-label uppercase text-grey flex items-center gap-2">
+            <span>Intermediary</span>
+            {% if can_write and investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
+            <form method="post"
+                  action="{% url 'crm:intermediary_mark_ex' investor.pk %}"
+                  hx-post="{% url 'crm:intermediary_mark_ex' investor.pk %}"
+                  hx-swap="none"
+                  class="inline normal-case">
+              {% csrf_token %}
+              <button type="submit"
+                      class="px-2 py-0.5 rounded-badge border border-grey-border text-grey text-body-sm font-normal whitespace-nowrap">
+                Mark as ex
+              </button>
+            </form>
+            {% endif %}
+          </dt>
           <dd class="text-navy">
             {% if investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
               {{ investor.intermediary.name }}
@@ -282,6 +297,57 @@
                 <button type="button" @click="showAll = true"
                         class="text-body-sm text-accent hover:underline font-medium">
                   Show all ({{ ex_contacts|length }})
+                </button>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="border border-grey-border rounded-card p-4 bg-white" x-data="{ showAll: false }">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-heading text-navy">Ex Intermediary</div>
+      </div>
+      <table class="w-full text-left text-body-sm">
+        <thead class="text-table-header uppercase text-grey-dark bg-grey-card/60">
+          <tr>
+            <th class="py-1.5 px-1">Name</th>
+            {% if can_write %}<th class="py-1.5 px-1 text-right"></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody class="text-grey">
+          {% for item in ex_intermediaries %}
+            <tr x-show="showAll || {{ forloop.counter }} <= 5"
+                class="border-t border-grey-border {% if forloop.counter0|divisibleby:2 %}bg-white{% else %}bg-grey-card/30{% endif %}">
+              <td class="py-1 text-navy">{{ item.name }}</td>
+              {% if can_write %}
+              <td class="py-1 text-right">
+                <form method="post"
+                      action="{% url 'crm:intermediary_reinstate' investor.pk item.pk %}"
+                      hx-post="{% url 'crm:intermediary_reinstate' investor.pk item.pk %}"
+                      hx-swap="none"
+                      hx-confirm="Reinstate {{ item.name }} as the intermediary?"
+                      class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="text-body-sm text-accent hover:underline">
+                    Reinstate
+                  </button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="{% if can_write %}2{% else %}1{% endif %}" class="py-2 text-grey">No ex intermediaries.</td>
+            </tr>
+          {% endfor %}
+          {% if ex_intermediaries|length > 5 %}
+            <tr x-show="!showAll" class="border-t border-grey-border">
+              <td colspan="{% if can_write %}2{% else %}1{% endif %}" class="py-2">
+                <button type="button" @click="showAll = true"
+                        class="text-body-sm text-accent hover:underline font-medium">
+                  Show all ({{ ex_intermediaries|length }})
                 </button>
               </td>
             </tr>
