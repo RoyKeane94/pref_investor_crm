@@ -1,5 +1,5 @@
-{# Expandable flag / fit reason bubble. Expects: note, label, label_class, bubble_class, empty_fallback; optional clear_confirm, clear_label #}
-<li class="{{ bubble_class }}" x-data="{ open: false }">
+{# Expandable flag / fit reason bubble. Expects: note, label, label_class, bubble_class, empty_fallback; optional clear_confirm, clear_label, clear_inplace #}
+<li id="agent-note-{{ note.pk }}" class="{{ bubble_class }}" x-data="{ open: false }">
   <button
     type="button"
     class="w-full text-left group cursor-pointer"
@@ -18,13 +18,14 @@
       <div class="text-navy/80 mt-1">{{ note.body|truncatechars:200 }}</div>
     {% endif %}
   </button>
-  {% include "crm/partials/agent_note_item_meta.html" with note=note clear_confirm=clear_confirm clear_label=clear_label %}
+  {% include "crm/partials/agent_note_item_meta.html" with note=note clear_confirm=clear_confirm clear_label=clear_label clear_inplace=clear_inplace %}
 
   <template x-teleport="body">
     <div
       x-show="open"
       x-cloak
       x-transition.opacity.duration.150ms
+      id="agent-note-dialog-{{ note.pk }}"
       class="fixed inset-0 bg-navy/40 backdrop-blur flex items-center justify-center z-50 p-4"
       role="dialog"
       aria-modal="true"
@@ -52,7 +53,7 @@
           <div class="text-navy text-body-sm">{{ empty_fallback }}</div>
         {% endif %}
         <div class="mt-6 pt-4 border-t border-grey-border flex flex-wrap items-center justify-between gap-3">
-          {% include "crm/partials/agent_note_item_meta.html" with note=note clear_confirm=clear_confirm clear_label=clear_label compact=1 %}
+          {% include "crm/partials/agent_note_item_meta.html" with note=note clear_confirm=clear_confirm clear_label=clear_label clear_inplace=clear_inplace compact=1 %}
           <button
             type="button"
             class="px-3 py-1.5 rounded-badge border border-grey-border text-navy text-body-sm hover:bg-grey-hover bg-white shrink-0"

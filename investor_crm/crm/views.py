@@ -1611,7 +1611,29 @@ def agent_note_delete(request: HttpRequest, pk: int) -> HttpResponse:
     note = get_object_or_404(AgentNote, pk=pk)
     if not can_edit_agent_note(request.user, note):
         return HttpResponseForbidden('You cannot delete this note.')
-    if request.method == 'POST':
-        note.delete()
-        messages.success(request, 'Note deleted.')
+    if request.method != 'POST':
+        return redirect('crm:agents')
+
+    investor_id = note.investor_id
+    note_type = note.note_type
+    note.delete()
+
+    # Flag clears from the agents board update that cell only.
+    if request.headers.get('HX-Request') == 'true':
+        still_there = AgentNote.objects.filter(
+            investor_id=investor_id,
+            note_type=note_type,
+        ).exists()
+        if still_there:
+            return HttpResponse('')
+        html = '<span class="text-grey">—</span>'
+        if note_type in ('flag', 'fit_flag'):
+            badge_id = f'agent-badge-{note_type}-{investor_id}'
+            html += f'<span id="{badge_id}" hx-swap-oob="delete"></span>'
+        response = HttpResponse(html)
+        response['HX-Retarget'] = f'#agent-col-{note_type}-{investor_id}'
+        response['HX-Reswap'] = 'innerHTML'
+        return response
+
+    messages.success(request, 'Note deleted.')
     return redirect('crm:agents')

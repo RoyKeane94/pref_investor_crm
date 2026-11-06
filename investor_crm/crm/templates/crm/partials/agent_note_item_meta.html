@@ -16,7 +16,15 @@
             hx-target="#modal-container"
             hx-swap="innerHTML">Edit</button>
     <form method="post" action="{% url 'crm:agent_note_delete' note.pk %}" class="inline-flex items-center"
-          onsubmit="return confirm('{{ clear_confirm|default:"Delete this finding?" }}');">
+          {% if clear_inplace %}
+          hx-post="{% url 'crm:agent_note_delete' note.pk %}"
+          hx-target="#agent-note-{{ note.pk }}"
+          hx-swap="delete"
+          hx-confirm="{{ clear_confirm|default:'Clear this flag?' }}"
+          hx-on::after-request="if (event.detail.successful) { var dialog = document.getElementById('agent-note-dialog-{{ note.pk }}'); if (dialog) dialog.remove(); }"
+          {% else %}
+          onsubmit="return confirm('{{ clear_confirm|default:"Delete this finding?" }}');"
+          {% endif %}>
       {% csrf_token %}
       <button type="submit"
               class="inline-flex items-center px-2 py-1 rounded-tag text-grey hover:text-danger hover:bg-grey-hover text-table-header font-medium">

@@ -313,12 +313,12 @@
                 </a>
                 <div class="mt-1 flex flex-wrap gap-1">
                   {% if row.flags %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-reminder-overdue-bg text-reminder-overdue border border-reminder-overdue/20 text-table-header font-medium">
+                    <span id="agent-badge-flag-{{ row.investor.pk }}" class="inline-flex items-center px-2 py-0.5 rounded-tag bg-reminder-overdue-bg text-reminder-overdue border border-reminder-overdue/20 text-table-header font-medium">
                       Look into
                     </span>
                   {% endif %}
                   {% if row.fit_flags %}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium">
+                    <span id="agent-badge-fit_flag-{{ row.investor.pk }}" class="inline-flex items-center px-2 py-0.5 rounded-tag bg-accent/10 text-accent border border-accent/30 text-table-header font-medium">
                       Fit
                     </span>
                   {% endif %}
@@ -327,26 +327,30 @@
                 <div class="text-grey mt-1">Updated {{ row.latest_at|date:"j M Y" }}</div>
               </td>
               <td class="px-3 py-3">
-                {% if row.flags %}
-                  <ul class="space-y-2">
-                    {% for note in row.flags %}
-                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Reason" label_class="text-reminder-overdue" bubble_class="rounded-card border border-reminder-overdue/30 bg-reminder-overdue-bg px-4 py-3" empty_fallback="Needs review" clear_confirm="Clear this flag?" clear_label="Clear" %}
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-grey">—</span>
-                {% endif %}
+                <div id="agent-col-flag-{{ row.investor.pk }}">
+                  {% if row.flags %}
+                    <ul class="space-y-2">
+                      {% for note in row.flags %}
+                        {% include "crm/partials/agent_reason_bubble.html" with note=note label="Reason" label_class="text-reminder-overdue" bubble_class="rounded-card border border-reminder-overdue/30 bg-reminder-overdue-bg px-4 py-3" empty_fallback="Needs review" clear_confirm="Clear this flag?" clear_label="Clear" clear_inplace="1" %}
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="text-grey">—</span>
+                  {% endif %}
+                </div>
               </td>
               <td class="px-3 py-3">
-                {% if row.fit_flags %}
-                  <ul class="space-y-2">
-                    {% for note in row.fit_flags %}
-                      {% include "crm/partials/agent_reason_bubble.html" with note=note label="Fit reason" label_class="text-accent" bubble_class="rounded-card border border-accent/30 bg-accent/10 px-4 py-3" empty_fallback="Fit" clear_confirm="Clear this fit flag?" clear_label="Clear" %}
-                    {% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-grey">—</span>
-                {% endif %}
+                <div id="agent-col-fit_flag-{{ row.investor.pk }}">
+                  {% if row.fit_flags %}
+                    <ul class="space-y-2">
+                      {% for note in row.fit_flags %}
+                        {% include "crm/partials/agent_reason_bubble.html" with note=note label="Fit reason" label_class="text-accent" bubble_class="rounded-card border border-accent/30 bg-accent/10 px-4 py-3" empty_fallback="Fit" clear_confirm="Clear this fit flag?" clear_label="Clear" clear_inplace="1" %}
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <span class="text-grey">—</span>
+                  {% endif %}
+                </div>
               </td>
               <td class="px-3 py-3">
                 {% if row.news %}
