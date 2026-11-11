@@ -67,8 +67,8 @@ def build_mcp_http_app():
         'lgps, lgps_pool, single_family_office, swf_government, '
         'wealth_manager_pb_mfo. '
         'status must be one of: target_sma, target_feeder_fund, target_fund_iii, '
-        'confirmed_sma, confirmed_feeder_fund, confirmed_fund_iii, other, '
-        'confirmed, dead. '
+        'confirmed_sma, confirmed_feeder_fund, confirmed_fund_iii, co_investor, '
+        'other, confirmed, dead. '
         'Note: "other" is a status, not an investor_type. Invalid filters return '
         'an error object listing valid_investor_types and valid_statuses.'
     ),

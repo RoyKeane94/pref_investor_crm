@@ -36,6 +36,7 @@ class Investor(models.Model):
         ('confirmed_sma', 'Confirmed for SMA'),
         ('confirmed_feeder_fund', 'Confirmed for Feeder'),
         ('confirmed_fund_iii', 'Confirmed for Fund III'),
+        ('co_investor', 'Co-investor'),
         ('other', 'Other'),
         ('confirmed', 'Revisit'),
         ('dead', 'Dead'),

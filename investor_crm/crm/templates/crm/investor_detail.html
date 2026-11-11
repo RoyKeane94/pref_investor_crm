@@ -23,6 +23,8 @@
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-feeder-bg text-status-feeder-text border border-status-feeder-border text-body-sm">Confirmed for Feeder</span>
             {% elif s == 'confirmed_fund_iii' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-fund-bg text-status-fund-text border border-status-fund-border text-body-sm">Confirmed for Fund III</span>
+            {% elif s == 'co_investor' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-coinvestor-bg text-status-coinvestor-text border border-status-coinvestor-border text-body-sm">Co-investor</span>
             {% elif s == 'other' %}
               <span class="inline-flex items-center px-2 py-0.5 rounded-badge bg-status-other-bg text-status-other-text border border-status-other-border text-body-sm">Other</span>
             {% elif s == 'confirmed' %}
@@ -77,10 +79,11 @@
           <dt class="text-field-label uppercase text-grey">Office</dt>
           <dd class="text-navy">{% if investor.office %}{{ investor.office.name }}{% else %}—{% endif %}</dd>
         </div>
+        {% if investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
         <div class="flex justify-between items-center gap-2">
           <dt class="text-field-label uppercase text-grey flex items-center gap-2">
             <span>Intermediary</span>
-            {% if can_write and investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
+            {% if can_write %}
             <form method="post"
                   action="{% url 'crm:intermediary_mark_ex' investor.pk %}"
                   hx-post="{% url 'crm:intermediary_mark_ex' investor.pk %}"
@@ -94,14 +97,19 @@
             </form>
             {% endif %}
           </dt>
-          <dd class="text-navy">
-            {% if investor.responsibility and investor.responsibility.name == "Intermediary" and investor.intermediary %}
-              {{ investor.intermediary.name }}
-            {% else %}
-              NA
-            {% endif %}
-          </dd>
+          <dd class="text-navy">{{ investor.intermediary.name }}</dd>
         </div>
+        {% elif investor.responsibility and investor.responsibility.name == "Prefequity" and investor.prefequity_owner %}
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Owner</dt>
+          <dd class="text-navy">{{ investor.get_prefequity_owner_display }}</dd>
+        </div>
+        {% else %}
+        <div class="flex justify-between">
+          <dt class="text-field-label uppercase text-grey">Intermediary / Owner</dt>
+          <dd class="text-navy">NA</dd>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center">
           <dt class="text-field-label uppercase text-grey">VDR Access</dt>
           <dd class="flex items-center space-x-2">

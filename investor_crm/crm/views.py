@@ -184,17 +184,22 @@ def _order_investor_queryset(qs, sort: str, sort_dir: str):
             output_field=int_out,
         ),
         _sb6=Case(
-            When(statuses__contains=['other'], then=Value(6)),
+            When(statuses__contains=['co_investor'], then=Value(6)),
             default=z,
             output_field=int_out,
         ),
         _sb7=Case(
-            When(statuses__contains=['confirmed'], then=Value(7)),
+            When(statuses__contains=['other'], then=Value(7)),
             default=z,
             output_field=int_out,
         ),
         _sb8=Case(
-            When(statuses__contains=['dead'], then=Value(8)),
+            When(statuses__contains=['confirmed'], then=Value(8)),
+            default=z,
+            output_field=int_out,
+        ),
+        _sb9=Case(
+            When(statuses__contains=['dead'], then=Value(9)),
             default=z,
             output_field=int_out,
         ),
@@ -209,6 +214,7 @@ def _order_investor_queryset(qs, sort: str, sort_dir: str):
             F('_sb6'),
             F('_sb7'),
             F('_sb8'),
+            F('_sb9'),
         )
     )
     name_order = 'name' if sort_dir == 'asc' else '-name'
