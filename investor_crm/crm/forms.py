@@ -106,11 +106,20 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             label='New office name (if not in list)',
         )
         office_name.widget.attrs['class'] = self.input_class
+        # Re-insert so the free-text field sits directly under the dropdown
+        # (class-level declaration would otherwise land after all Meta fields).
+        intermediary_name = self.fields.pop('intermediary_name', None)
+        if intermediary_name is not None:
+            intermediary_name.widget.attrs['class'] = self.input_class
         new_fields = OrderedDict()
         for name, field in self.fields.items():
             new_fields[name] = field
             if name == 'office':
                 new_fields['office_name'] = office_name
+            if name == 'intermediary' and intermediary_name is not None:
+                new_fields['intermediary_name'] = intermediary_name
+        if intermediary_name is not None and 'intermediary_name' not in new_fields:
+            new_fields['intermediary_name'] = intermediary_name
         self.fields = new_fields
         self.fields['prefequity_owner'].required = False
         self.fields['prefequity_owner'].label = 'Prefequity Owner'
@@ -121,12 +130,16 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
         # (Office model itself doesn't define a default ordering.)
         if 'office' in self.fields:
             self.fields['office'].queryset = Office.objects.all().order_by('name')
+        if 'intermediary' in self.fields:
+            self.fields['intermediary'].queryset = (
+                Intermediary.objects.all().order_by('name')
+            )
 
     def clean(self):
         cleaned = super().clean()
         responsibility = cleaned.get('responsibility')
         intermediary = cleaned.get('intermediary')
-        intermediary_name = cleaned.get('intermediary_name')
+        intermediary_name = (cleaned.get('intermediary_name') or '').strip()
 
         if responsibility and responsibility.name == 'Intermediary':
             if not intermediary and not intermediary_name:
@@ -142,22 +155,29 @@ class InvestorForm(TailwindFormMixin, forms.ModelForm):
             'responsibility'
         )
         intermediary: Intermediary | None = self.cleaned_data.get('intermediary')
-        intermediary_name: str = self.cleaned_data.get('intermediary_name') or ''
-        office_name: str = self.cleaned_data.get('office_name') or ''
+        intermediary_name: str = (
+            self.cleaned_data.get('intermediary_name') or ''
+        ).strip()
+        office_name: str = (self.cleaned_data.get('office_name') or '').strip()
 
-        if responsibility and responsibility.name == 'Intermediary':
-            if not intermediary and (intermediary_name or '').strip():
-                intermediary, _ = Intermediary.objects.get_or_create(
-                    name=(intermediary_name or '').strip()
+        # Typed name wins over the dropdown (same pattern as office_name).
+        if intermediary_name:
+            intermediary, _ = Intermediary.objects.get_or_create(
+                name=intermediary_name
+            )
+            instance.intermediary = intermediary
+            if not responsibility or responsibility.name != 'Intermediary':
+                responsibility, _ = Responsibility.objects.get_or_create(
+                    name='Intermediary'
                 )
+                instance.responsibility = responsibility
+        elif responsibility and responsibility.name == 'Intermediary':
             instance.intermediary = intermediary
         else:
             instance.intermediary = None
 
-        if (office_name or '').strip():
-            office, _ = Office.objects.get_or_create(
-                name=(office_name or '').strip()
-            )
+        if office_name:
+            office, _ = Office.objects.get_or_create(name=office_name)
             instance.office = office
 
         statuses = self.cleaned_data.get('statuses') or []
