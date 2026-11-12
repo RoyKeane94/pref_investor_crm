@@ -38,7 +38,7 @@ class Investor(models.Model):
         ('confirmed_fund_iii', 'Confirmed for Fund III'),
         ('co_investor', 'Co-investor'),
         ('other', 'Other'),
-        ('confirmed', 'Revisit'),
+        ('confirmed', 'Recycle'),
         ('dead', 'Dead'),
     ]
 

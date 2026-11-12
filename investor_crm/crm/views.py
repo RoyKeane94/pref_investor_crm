@@ -149,7 +149,7 @@ def _order_investor_queryset(qs, sort: str, sort_dir: str):
         return qs.order_by(
             f'{prefix}responsibility__name', 'name' if sort_dir == 'asc' else '-name'
         )
-    # Default / Investor column: category priority (Target SMA → … → Revisit), then name
+    # Default / Investor column: category priority (Target SMA → … → Recycle), then name
     z = Value(999, output_field=IntegerField())
     int_out = IntegerField()
     qs = qs.annotate(
